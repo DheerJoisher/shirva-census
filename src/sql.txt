@@ -1,0 +1,83 @@
+CREATE TABLE HOUSEHOLD (
+    household_id SERIAL PRIMARY KEY,
+    head_of_family_id INT,
+    address TEXT,
+    chapter TEXT,
+    number_of_members INT
+);
+
+CREATE TABLE RESIDENTS (
+    resident_id SERIAL PRIMARY KEY,
+    first_name TEXT,
+    middle_name TEXT,
+    last_name TEXT,
+    gender TEXT,
+    relation TEXT,
+    marital_status TEXT,
+    date_of_birth DATE,
+    phone_number TEXT UNIQUE,
+    email TEXT UNIQUE,
+    lifemember BOOLEAN,
+    household_id INT REFERENCES HOUSEHOLD(household_id) ON DELETE CASCADE
+);
+
+ALTER TABLE HOUSEHOLD 
+ADD CONSTRAINT fk_head_of_family 
+FOREIGN KEY (head_of_family_id) 
+REFERENCES RESIDENTS(resident_id) 
+ON DELETE SET NULL;
+
+ALTER TABLE HOUSEHOLD 
+ADD CONSTRAINT unique_head_of_family UNIQUE (head_of_family_id);
+
+CREATE TABLE OCCUPATION (
+    occupation_id SERIAL PRIMARY KEY,
+    resident_id INT REFERENCES RESIDENTS(resident_id) ON DELETE CASCADE,
+    occupation TEXT,
+    profession TEXT,
+    work_location TEXT
+);
+
+CREATE TABLE EDUCATION (
+    resident_id INT PRIMARY KEY REFERENCES RESIDENTS(resident_id) ON DELETE CASCADE,
+    highest_qualification TEXT,
+    school_or_college_name TEXT,
+    year_of_completion INT
+);
+
+CREATE TABLE HEALTH_RECORDS (
+    resident_id INT PRIMARY KEY REFERENCES RESIDENTS(resident_id) ON DELETE CASCADE,
+    blood_group TEXT,
+    mediclaim TEXT,
+    Thalassamia TEXT,
+    G6PD TEXT
+);
+
+CREATE TABLE WHATSAPP_GROUPS (
+    resident_id INT PRIMARY KEY REFERENCES RESIDENTS(resident_id) ON DELETE CASCADE,
+    Shirva_Setu BOOLEAN DEFAULT FALSE,
+    Dukhad_Nidhan BOOLEAN DEFAULT FALSE,
+    SGNX BOOLEAN DEFAULT FALSE,
+    SGNX_Parent BOOLEAN DEFAULT FALSE
+);
+
+CREATE TABLE pending_users (
+    id SERIAL PRIMARY KEY,
+    first_name TEXT,
+    last_name TEXT,
+    email TEXT UNIQUE,
+    phone_number TEXT UNIQUE,
+    password TEXT NOT NULL,
+    registered_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Add auth fields to users table
+CREATE TABLE users (
+    user_id UUID PRIMARY KEY,
+    email TEXT UNIQUE,  -- Added for authentication
+    phone_number TEXT UNIQUE,  -- Added for authentication
+    password TEXT NOT NULL,  -- Added for authentication
+    resident_id INT REFERENCES RESIDENTS(resident_id) ON DELETE CASCADE,
+    role TEXT CHECK (role IN ('user', 'admin')) NOT NULL DEFAULT 'user',
+    created_at TIMESTAMP DEFAULT NOW()
+);
