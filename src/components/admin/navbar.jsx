@@ -174,13 +174,6 @@ const Navbar = () => {
               horizontal: 'right',
             }}
           >
-            <MenuItem onClick={handleClose} component={Link} to="/admin/profile">
-              <ListItemIcon>
-                <AccountCircleIcon fontSize="small" />
-              </ListItemIcon>
-              Profile
-            </MenuItem>
-            <Divider />
             <MenuItem onClick={handleClose} component={Link} to="/signin">
               <ListItemIcon>
                 <LogoutIcon fontSize="small" />

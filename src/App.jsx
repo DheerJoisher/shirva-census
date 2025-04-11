@@ -5,6 +5,8 @@ import './App.css';
 // User pages
 import UserDashboard from './pages/user/dashboard';
 import AddMember from './pages/user/addmember';
+import FamilySettings from './pages/user/familydetails';
+import AccountSettings from './pages/user/accountsettings';
 
 // Admin pages
 import AdminDashboard from './pages/admin/dashboard';
@@ -12,6 +14,7 @@ import Approvals from './pages/admin/approvals';
 import TotalFamilies from './pages/admin/totalfam';
 import Residents from './pages/admin/residents';
 import Analytics from './pages/admin/analytics';
+import Households from './pages/admin/households';
 
 // General pages
 import Landing from './pages/landing';
@@ -26,6 +29,8 @@ function App() {
         {/* User Routes */}
         <Route path="/user/dashboard" element={<UserDashboard />} />
         <Route path="/user/add-member" element={<AddMember />} />
+        <Route path="/user/family-settings" element={<FamilySettings />} />
+        <Route path="/user/settings" element={<AccountSettings />} />
         
         {/* Admin Routes */}
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
@@ -33,6 +38,7 @@ function App() {
         <Route path="/admin/total-families" element={<TotalFamilies />} />
         <Route path="/admin/residents" element={<Residents />} />
         <Route path="/admin/analytics" element={<Analytics />} />
+        <Route path="/admin/households" element={<Households />} />
         
         {/* General Routes */}
         <Route path="/" element={<Landing />} />

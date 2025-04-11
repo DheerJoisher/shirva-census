@@ -48,9 +48,8 @@ const Navbar = () => {
   ];
   
   const settings = [
-    { name: 'Profile', link: '/user/profile', icon: <Avatar sx={{ width: 24, height: 24 }} /> },
-    { name: 'Family Settings', link: '/user/family-settings', icon: <FamilyRestroomIcon /> },
     { name: 'Account Settings', link: '/user/settings', icon: <SettingsIcon /> },
+    { name: 'Family Settings', link: '/user/family-settings', icon: <FamilyRestroomIcon /> },
     { name: 'Logout', link: '/signin', icon: <LogoutIcon /> }
   ];
   

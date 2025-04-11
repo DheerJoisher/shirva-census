@@ -138,7 +138,7 @@ const AdminDashboard = () => {
         
         <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
           {/* Total Families Card */}
-          <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6 border border-gray-100 hover:shadow-md transition-shadow">
+          <Link to="/admin/households" className="bg-white rounded-xl shadow-sm p-4 sm:p-6 border border-gray-100 hover:shadow-md transition-shadow group">
             <div className="flex items-center justify-between">
               <div className="overflow-hidden">
                 <p className="text-xs sm:text-sm font-medium text-gray-500">Total Households</p>
@@ -148,10 +148,14 @@ const AdminDashboard = () => {
                 <FaUsers className="text-xl sm:text-2xl" />
               </div>
             </div>
-          </div>
+            <div className="mt-3 sm:mt-4 flex items-center text-xs sm:text-sm text-blue-600 group-hover:underline">
+              <span>View all</span>
+              <FaChevronRight className="ml-1 text-xs" />
+            </div>
+          </Link>
           
           {/* Total Residents Card */}
-          <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6 border border-gray-100 hover:shadow-md transition-shadow">
+          <Link to="/admin/residents" className="bg-white rounded-xl shadow-sm p-4 sm:p-6 border border-gray-100 hover:shadow-md transition-shadow group">
             <div className="flex items-center justify-between">
               <div className="overflow-hidden">
                 <p className="text-xs sm:text-sm font-medium text-gray-500">Total Residents</p>
@@ -161,7 +165,11 @@ const AdminDashboard = () => {
                 <FaUserPlus className="text-xl sm:text-2xl" />
               </div>
             </div>
-          </div>
+            <div className="mt-3 sm:mt-4 flex items-center text-xs sm:text-sm text-green-600 group-hover:underline">
+              <span>View all</span>
+              <FaChevronRight className="ml-1 text-xs" />
+            </div>
+          </Link>
           
           {/* Pending Approvals Card */}
           <Link to="/admin/approvals" className="bg-white rounded-xl shadow-sm p-4 sm:p-6 border border-gray-100 hover:shadow-md transition-shadow group">
@@ -179,37 +187,7 @@ const AdminDashboard = () => {
               <FaChevronRight className="ml-1 text-xs" />
             </div>
           </Link>
-          
-          {/* Life Members Card */}
-          <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6 border border-gray-100 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <div className="overflow-hidden">
-                <p className="text-xs sm:text-sm font-medium text-gray-500">Life Members</p>
-                <p className="text-xl sm:text-2xl font-bold text-gray-800 mt-1">{stats.lifeMemberCount}</p>
-              </div>
-              <div className="p-2 sm:p-3 rounded-lg bg-purple-50 text-purple-500 flex-shrink-0">
-                <FaChartBar className="text-xl sm:text-2xl" />
-              </div>
-            </div>
-          </div>
-          
-          {/* View Data Card */}
-          <Link to="/admin/residents" className="bg-white rounded-xl shadow-sm p-4 sm:p-6 border border-gray-100 hover:shadow-md transition-shadow group">
-            <div className="flex items-center justify-between">
-              <div className="overflow-hidden">
-                <p className="text-xs sm:text-sm font-medium text-gray-500">Census Records</p>
-                <p className="text-xl sm:text-2xl font-bold text-gray-800 mt-1">Manage</p>
-              </div>
-              <div className="p-2 sm:p-3 rounded-lg bg-green-50 text-green-500 flex-shrink-0">
-                <FaDatabase className="text-xl sm:text-2xl" />
-              </div>
-            </div>
-            <div className="mt-3 sm:mt-4 flex items-center text-xs sm:text-sm text-green-500 group-hover:underline">
-              <span>View all data</span>
-              <FaChevronRight className="ml-1 text-xs" />
-            </div>
-          </Link>
-          
+                    
           {/* Analytics Card */}
           <Link to="/admin/analytics" className="bg-white rounded-xl shadow-sm p-4 sm:p-6 border border-gray-100 hover:shadow-md transition-shadow group">
             <div className="flex items-center justify-between">

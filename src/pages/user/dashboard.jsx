@@ -12,6 +12,7 @@ import EditMemberModal from '../../components/user/editmember';
 import Navbar from '../../components/user/navbar';
 import Footer from '../../components/user/footer';
 import { supabase } from '../../supabaseClient'; // Import Supabase client
+import { Link } from 'react-router-dom';
 
 const Dashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -242,18 +243,22 @@ const Dashboard = () => {
                 </Typography>
               </Box>
               <Box display="flex" gap={1}>
+                <Link to="/user/add-member">
                 <IconButton 
                   sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: 'white' }}
                   title="Add Member"
                 >
                   <PersonAddIcon />
                 </IconButton>
+                </Link>
+                <Link to="/user/family-settings">
                 <IconButton 
                   sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: 'white' }}
                   title="Manage Family"
                 >
                   <FamilyRestroomIcon />
                 </IconButton>
+                </Link>
               </Box>
             </Box>
 
