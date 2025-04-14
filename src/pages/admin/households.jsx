@@ -1,63 +1,60 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Table, Card, Form, InputGroup, Row, Col } from 'react-bootstrap';
+import { Container, Table, Card, Form, InputGroup } from 'react-bootstrap';
 import { FaSearch } from 'react-icons/fa';
 import Navbar from '../../components/admin/navbar';
 import Footer from '../../components/admin/footer';
+import { supabase } from '../../supabaseClient';
 
 const Households = () => {
   const [households, setHouseholds] = useState([]);
+  const [filteredHouseholds, setFilteredHouseholds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedChapter, setSelectedChapter] = useState('');
   const [chapters, setChapters] = useState([]);
-  
-  // Fetch households data
+
   useEffect(() => {
-    // Replace with actual API call
     const fetchHouseholds = async () => {
       try {
-        // Simulate API call with dummy data
-        setTimeout(() => {
-          const dummyData = [
-            { id: 1, headOfFamily: 'John Doe', address: '123 Main St, Shirva', chapter: 'East' },
-            { id: 2, headOfFamily: 'Jane Smith', address: '456 Oak Ave, Shirva', chapter: 'West' },
-            { id: 3, headOfFamily: 'Robert Johnson', address: '789 Pine Rd, Shirva', chapter: 'North' },
-            { id: 4, headOfFamily: 'Emily Davis', address: '101 Cedar Ln, Shirva', chapter: 'South' },
-            { id: 5, headOfFamily: 'Michael Wilson', address: '202 Maple Dr, Shirva', chapter: 'Central' },
-          ];
-          setHouseholds(dummyData);
-          setLoading(false);
-        }, 1000);
-      } catch (error) {
-        console.error('Error fetching households:', error);
+        const { data, error } = await supabase
+          .from('household')
+          .select('*');
+
+        if (error) throw error;
+
+        setHouseholds(data);
+        setFilteredHouseholds(data);
+
+        // Extract unique chapters
+        const uniqueChapters = [...new Set(data.map(house => house.chapter))];
+        setChapters(uniqueChapters);
+      } catch (err) {
+        console.error('Error fetching households:', err.message);
+      } finally {
         setLoading(false);
       }
     };
 
     fetchHouseholds();
+  }, []);
 
-    // Extract unique chapters for filter dropdown
-    const fetchChapters = () => {
-      const uniqueChapters = [...new Set(households.map(house => house.chapter))];
-      setChapters(uniqueChapters);
-    };
+  // Filter logic
+  useEffect(() => {
+    const filtered = households.filter((household) => {
+      const matchesSearch =
+        (household.head_of_family || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (household.address || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (household.chapter || '').toLowerCase().includes(searchTerm.toLowerCase());
 
-    if (!loading) {
-      fetchChapters();
-    }
-  }, [households, loading]);
+      const matchesChapter =
+        selectedChapter === '' || household.chapter === selectedChapter;
 
-  // Filter households based on search term and selected chapter
-  const filteredHouseholds = households.filter(household => {
-    const matchesSearch = 
-      household.headOfFamily.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      household.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      household.chapter.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesChapter = selectedChapter === '' || household.chapter === selectedChapter;
-    
-    return matchesSearch && matchesChapter;
-  });
+      return matchesSearch && matchesChapter;
+    });
+
+    setFilteredHouseholds(filtered);
+  }, [searchTerm, selectedChapter, households]);
+
 
   return (
     <>

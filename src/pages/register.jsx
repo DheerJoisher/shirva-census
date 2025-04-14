@@ -38,12 +38,13 @@ const Signup = () => {
 
     const { data: userData, error: insertError } = await supabase.from('pending_users').insert([
       {
-        user_id: userId,
+        id: userId,
         first_name: firstName,
         last_name: lastName,
         email: email,
         phone_number: phone_number,
-        is_verified: false,
+        registered_at: new Date().toISOString(),
+    
       },
     ]);
 

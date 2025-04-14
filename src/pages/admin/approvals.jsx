@@ -49,6 +49,7 @@ const Approvals = () => {
                 .insert([{
                     user_id,
                     resident_id: null, // Would need to create resident first
+                    
                     role: 'user'
                 }]);
             

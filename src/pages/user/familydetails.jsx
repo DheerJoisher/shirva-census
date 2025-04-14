@@ -1,34 +1,78 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from '../../components/user/navbar';
 import Footer from '../../components/user/footer';
+import { supabase } from '../../supabaseClient';
 
 const FamilyDetails = () => {
-  // State for form inputs
   const [address, setAddress] = useState('');
   const [chapter, setChapter] = useState('');
-  
-  // State for family members list
   const [familyMembers, setFamilyMembers] = useState([]);
-  
-  // Handle form submission
-  const handleSubmit = (e) => {
+  const [loading, setLoading] = useState(true);
+
+  const householdId = localStorage.getItem('household_id');
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!householdId) {
+        console.warn('No household ID found in localStorage');
+        setLoading(false);
+        return;
+      }
+
+      try {
+        // Fetch family members
+        const { data: members, error: membersError } = await supabase
+          .from('residents')
+          .select('resident_id, first_name, last_name, date_of_birth, relation')
+          .eq('household_id', householdId);
+
+        if (membersError) throw membersError;
+        setFamilyMembers(members || []);
+
+        // Fetch household address and chapter
+        const { data: household, error: householdError } = await supabase
+          .from('household')
+          .select('address, chapter')
+          .eq('household_id', householdId)
+          .single();
+
+        if (householdError) throw householdError;
+
+        setAddress(household.address || '');
+        setChapter(household.chapter || '');
+      } catch (err) {
+        console.error('Error fetching data:', err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [householdId]);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // In a real application, you would fetch data from an API here
-    // For demo purposes, we'll just add some dummy data
-    setFamilyMembers([
-      { id: 1, name: 'John Doe', age: 35, relation: 'Self' },
-      { id: 2, name: 'Jane Doe', age: 32, relation: 'Spouse' },
-      { id: 3, name: 'Jimmy Doe', age: 10, relation: 'Child' },
-    ]);
+
+    try {
+      const { error } = await supabase
+        .from('household')
+        .update({ address, chapter })
+        .eq('household_id', householdId);
+
+      if (error) throw error;
+
+      alert('Household details updated successfully');
+    } catch (err) {
+      console.error('Error updating household:', err.message);
+    }
   };
-  
+
   return (
     <>
       <Navbar />
       <div className="container mx-auto p-4">
         <h1 className="text-2xl font-bold mb-6">Family Details</h1>
-        
-        {/* Form for address and chapter */}
+
         <form onSubmit={handleSubmit} className="mb-8">
           <div className="mb-4">
             <label htmlFor="address" className="block mb-2 font-medium">Address</label>
@@ -42,7 +86,7 @@ const FamilyDetails = () => {
               required
             />
           </div>
-          
+
           <div className="mb-4">
             <label htmlFor="chapter" className="block mb-2 font-medium">Chapter</label>
             <input
@@ -55,7 +99,7 @@ const FamilyDetails = () => {
               required
             />
           </div>
-          
+
           <button 
             type="submit" 
             className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
@@ -63,25 +107,28 @@ const FamilyDetails = () => {
             Submit
           </button>
         </form>
-        
-        {/* Family members list */}
-        {familyMembers.length > 0 && (
+
+        {loading ? (
+          <div className="text-center">Loading family members...</div>
+        ) : familyMembers.length > 0 ? (
           <div>
             <h2 className="text-xl font-semibold mb-4">Family Members</h2>
             <div className="overflow-x-auto">
               <table className="min-w-full bg-white border">
                 <thead>
                   <tr className="bg-gray-100">
-                    <th className="py-2 px-4 border text-left">Name</th>
-                    <th className="py-2 px-4 border text-left">Age</th>
+                    <th className="py-2 px-4 border text-left">First Name</th>
+                    <th className="py-2 px-4 border text-left">Last Name</th>
+                    <th className="py-2 px-4 border text-left">Date of Birth</th>
                     <th className="py-2 px-4 border text-left">Relation</th>
                   </tr>
                 </thead>
                 <tbody>
                   {familyMembers.map((member) => (
-                    <tr key={member.id}>
-                      <td className="py-2 px-4 border">{member.name}</td>
-                      <td className="py-2 px-4 border">{member.age}</td>
+                    <tr key={member.resident_id}>
+                      <td className="py-2 px-4 border">{member.first_name}</td>
+                      <td className="py-2 px-4 border">{member.last_name}</td>
+                      <td className="py-2 px-4 border">{member.date_of_birth}</td>
                       <td className="py-2 px-4 border">{member.relation}</td>
                     </tr>
                   ))}
@@ -89,6 +136,8 @@ const FamilyDetails = () => {
               </table>
             </div>
           </div>
+        ) : (
+          <p className="text-center">No family members found.</p>
         )}
       </div>
       <Footer />

@@ -8,7 +8,7 @@ import { supabase } from '../../supabaseClient';
 const AdminDashboard = () => {
   const [stats, setStats] = useState({
     totalFamilies: 0,
-    totalResidents: 0,
+    totalresidents: 0,
     pendingApprovals: 0,
     lifeMemberCount: 0
   });
@@ -21,12 +21,12 @@ const AdminDashboard = () => {
       try {
         // Get total households count
         const { count: familiesCount, error: familiesError } = await supabase
-          .from('HOUSEHOLD')
+          .from('household')
           .select('*', { count: 'exact', head: 'count' });
         
         // Get total residents count
         const { count: residentsCount, error: residentsError } = await supabase
-          .from('RESIDENTS')
+          .from('residents')
           .select('*', { count: 'exact', head: 'count' });
         
         // Get pending approvals count
@@ -36,7 +36,7 @@ const AdminDashboard = () => {
         
         // Get life members count
         const { count: lifeMembers, error: lifeMemberError } = await supabase
-          .from('RESIDENTS')
+          .from('residents')
           .select('*', { count: 'exact', head: 'count' })
           .eq('lifemember', true);
         
@@ -49,7 +49,7 @@ const AdminDashboard = () => {
         
         setStats({
           totalFamilies: familiesCount || 0,
-          totalResidents: residentsCount || 0,
+          totalresidents: residentsCount || 0,
           pendingApprovals: pendingCount || 0,
           lifeMemberCount: lifeMembers || 0
         });
@@ -64,8 +64,8 @@ const AdminDashboard = () => {
     const fetchRecentActivity = async () => {
       try {
         // Get recently registered families/residents
-        const { data: recentResidents, error: residentsError } = await supabase
-          .from('RESIDENTS')
+        const { data: recentresidents, error: residentsError } = await supabase
+          .from('residents')
           .select('first_name, last_name, created_at')
           .order('created_at', { ascending: false })
           .limit(3);
@@ -84,11 +84,11 @@ const AdminDashboard = () => {
         
         const activity = [];
         
-        if (recentResidents?.length) {
+        if (recentresidents?.length) {
           activity.push({
             type: 'residents',
-            count: recentResidents.length,
-            time: new Date(recentResidents[0].created_at),
+            count: recentresidents.length,
+            time: new Date(recentresidents[0].created_at),
             icon: <FaUsers className="text-base sm:text-lg" />
           });
         }
@@ -141,7 +141,7 @@ const AdminDashboard = () => {
           <Link to="/admin/households" className="bg-white rounded-xl shadow-sm p-4 sm:p-6 border border-gray-100 hover:shadow-md transition-shadow group">
             <div className="flex items-center justify-between">
               <div className="overflow-hidden">
-                <p className="text-xs sm:text-sm font-medium text-gray-500">Total Households</p>
+                <p className="text-xs sm:text-sm font-medium text-gray-500">Total households</p>
                 <p className="text-xl sm:text-2xl font-bold text-gray-800 mt-1">{stats.totalFamilies}</p>
               </div>
               <div className="p-2 sm:p-3 rounded-lg bg-blue-50 text-blue-600 flex-shrink-0">
@@ -154,12 +154,12 @@ const AdminDashboard = () => {
             </div>
           </Link>
           
-          {/* Total Residents Card */}
+          {/* Total residents Card */}
           <Link to="/admin/residents" className="bg-white rounded-xl shadow-sm p-4 sm:p-6 border border-gray-100 hover:shadow-md transition-shadow group">
             <div className="flex items-center justify-between">
               <div className="overflow-hidden">
-                <p className="text-xs sm:text-sm font-medium text-gray-500">Total Residents</p>
-                <p className="text-xl sm:text-2xl font-bold text-gray-800 mt-1">{stats.totalResidents}</p>
+                <p className="text-xs sm:text-sm font-medium text-gray-500">Total residents</p>
+                <p className="text-xl sm:text-2xl font-bold text-gray-800 mt-1">{stats.totalresidents}</p>
               </div>
               <div className="p-2 sm:p-3 rounded-lg bg-green-50 text-green-600 flex-shrink-0">
                 <FaUserPlus className="text-xl sm:text-2xl" />

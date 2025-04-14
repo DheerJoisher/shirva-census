@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { 
-  Container, Box, Typography, Paper, Table, TableBody, 
-  TableCell, TableContainer, TableHead, TableRow, CircularProgress, TextField 
+import {
+  Container, Box, Typography, Paper, Table, TableBody,
+  TableCell, TableContainer, TableHead, TableRow, CircularProgress, TextField
 } from '@mui/material';
 import Navbar from '../../components/admin/navbar';
 import Footer from '../../components/admin/footer';
@@ -16,48 +16,12 @@ const Residents = () => {
   useEffect(() => {
     const fetchResidents = async () => {
       try {
-        // Fetch residents with joined data from related tables
         const { data, error } = await supabase
-          .from('RESIDENTS')
-          .select(`
-            resident_id,
-            first_name,
-            middle_name,
-            last_name,
-            gender,
-            relation,
-            marital_status,
-            date_of_birth,
-            phone_number,
-            email,
-            lifemember,
-            OCCUPATION (
-              occupation,
-              profession,
-              work_location
-            ),
-            EDUCATION (
-              highest_qualification,
-              school_or_college_name,
-              year_of_completion
-            ),
-            HEALTH_RECORDS (
-              blood_group,
-              mediclaim,
-              Thalassamia,
-              G6PD
-            ),
-            WHATSAPP_GROUPS (
-              Shirva_Setu,
-              Dukhad_Nidhan,
-              SGNX,
-              SGNX_Parent
-            )
-          `);
+          .from('residents')
+          .select('*');
 
         if (error) throw error;
-        
-        // Transform data to flatten the structure for easier display
+
         const transformedData = data.map(resident => ({
           resident_id: resident.resident_id,
           first_name: resident.first_name,
@@ -70,21 +34,19 @@ const Residents = () => {
           phone_number: resident.phone_number,
           email: resident.email,
           lifemember: resident.lifemember ? 'Yes' : 'No',
-          // Occupation details
-          occupation: resident.OCCUPATION?.[0]?.occupation || '',
-          profession: resident.OCCUPATION?.[0]?.profession || '',
-          work_location: resident.OCCUPATION?.[0]?.work_location || '',
-          // Education details
-          highest_qualification: resident.EDUCATION?.[0]?.highest_qualification || '',
-          school_name: resident.EDUCATION?.[0]?.school_or_college_name || '',
-          year_of_completion: resident.EDUCATION?.[0]?.year_of_completion || '',
-          // Health details
-          blood_group: resident.HEALTH_RECORDS?.[0]?.blood_group || '',
-          mediclaim: resident.HEALTH_RECORDS?.[0]?.mediclaim || '',
-          thalassemia: resident.HEALTH_RECORDS?.[0]?.Thalassamia || '',
-          g6pd: resident.HEALTH_RECORDS?.[0]?.G6PD || '',
-          // WhatsApp groups
-          whatsapp_groups: resident.WHATSAPP_GROUPS?.[0] || {
+
+          // Dummy related data
+          occupation: '—',
+          profession: '—',
+          work_location: '—',
+          highest_qualification: '—',
+          school_name: '—',
+          year_of_completion: '—',
+          blood_group: '—',
+          mediclaim: '—',
+          thalassemia: '—',
+          g6pd: '—',
+          whatsapp_groups: {
             Shirva_Setu: false,
             Dukhad_Nidhan: false,
             SGNX: false,
@@ -95,68 +57,7 @@ const Residents = () => {
         setResidents(transformedData);
         setFilteredResidents(transformedData);
       } catch (error) {
-        console.error('Error fetching residents:', error);
-        // Fallback to dummy data in case of error
-        const dummyData = [
-          {
-            first_name: 'John',
-            middle_name: 'A.',
-            last_name: 'Doe',
-            gender: 'Male',
-            relation: 'Self',
-            marital_status: 'Single',
-            date_of_birth: '1990-01-01',
-            phone_number: '1234567890',
-            email: 'john.doe@example.com',
-            lifemember: 'Yes',
-            occupation: 'Engineer',
-            profession: 'Software Developer',
-            work_location: 'New York',
-            highest_qualification: 'Master\'s',
-            school_name: 'XYZ University',
-            year_of_completion: '2015',
-            blood_group: 'O+',
-            mediclaim: 'Yes',
-            thalassemia: 'Negative',
-            g6pd: 'Negative',
-            whatsapp_groups: {
-              Shirva_Setu: true,
-              Dukhad_Nidhan: false,
-              SGNX: true,
-              SGNX_Parent: false
-            }
-          },
-          {
-            first_name: 'Jane',
-            middle_name: 'B.',
-            last_name: 'Smith',
-            gender: 'Female',
-            relation: 'Spouse',
-            marital_status: 'Married',
-            date_of_birth: '1992-05-15',
-            phone_number: '0987654321',
-            email: 'jane.smith@example.com',
-            lifemember: 'No',
-            occupation: 'Doctor',
-            profession: 'Pediatrician',
-            work_location: 'Los Angeles',
-            highest_qualification: 'Doctorate',
-            school_name: 'ABC Medical College',
-            year_of_completion: '2018',
-            blood_group: 'A+',
-            mediclaim: 'No',
-            thalassemia: 'Not Checked',
-            g6pd: 'Not Checked',
-            whatsapp_groups: {
-              Shirva_Setu: false,
-              Dukhad_Nidhan: true,
-              SGNX: false,
-              SGNX_Parent: true
-            }
-          }
-        ];
-        setResidents(dummyData);
-        setFilteredResidents(dummyData);
+        console.error('Error fetching residents:', error.message);
       } finally {
         setLoading(false);
       }
@@ -176,7 +77,6 @@ const Residents = () => {
       )
     );
   };
-
   return (
     <>
       <Navbar />

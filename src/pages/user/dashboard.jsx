@@ -30,42 +30,24 @@ const Dashboard = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        // Get the currently logged in user
-        const { data: { user } } = await supabase.auth.getUser();
-        
-        if (!user) throw new Error('User not authenticated');
-        
-        // Get the user's data to find their resident_id
-        const { data: userData, error: userError } = await supabase
-          .from('users')
-          .select('resident_id')
-          .eq('user_id', user.id)
-          .single();
-          
-        if (userError) throw userError;
-        
-        // Get the user's household
-        const { data: residentData, error: residentError } = await supabase
-          .from('RESIDENTS')
-          .select('household_id')
-          .eq('resident_id', userData.resident_id)
-          .single();
-          
-        if (residentError) throw residentError;
-        
+  
+        // Get household_id from localStorage
+        const household_id = localStorage.getItem('household_id');
+        if (!household_id) throw new Error('No household_id found in localStorage');
+  
         // Get household details
         const { data: household, error: householdError } = await supabase
-          .from('HOUSEHOLD')
+          .from('household')
           .select('*')
-          .eq('household_id', residentData.household_id)
+          .eq('household_id', household_id)
           .single();
-          
+  
         if (householdError) throw householdError;
         setHouseholdData(household);
-        
+  
         // Get all family members in this household
         const { data: members, error: membersError } = await supabase
-          .from('RESIDENTS')
+          .from('residents')
           .select(`
             resident_id,
             first_name,
@@ -75,17 +57,15 @@ const Dashboard = () => {
             relation,
             date_of_birth,
             phone_number,
-            email,
-            OCCUPATION (occupation),
-            EDUCATION (highest_qualification)
-          `)
-          .eq('household_id', residentData.household_id);
+            email
           
+          `)
+          .eq('household_id', household_id);
+  
         if (membersError) throw membersError;
-        
+  
         // Process members data for display
         const processedMembers = members.map(member => {
-          // Calculate age from date_of_birth
           const birthDate = new Date(member.date_of_birth);
           const today = new Date();
           let age = today.getFullYear() - birthDate.getFullYear();
@@ -93,7 +73,7 @@ const Dashboard = () => {
           if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
             age--;
           }
-          
+  
           return {
             id: member.resident_id,
             name: `${member.first_name} ${member.middle_name ? member.middle_name + ' ' : ''}${member.last_name}`,
@@ -107,18 +87,19 @@ const Dashboard = () => {
             education: member.EDUCATION?.highest_qualification
           };
         });
-        
+  
         setFamilyMembers(processedMembers);
         setFilteredMembers(processedMembers);
       } catch (error) {
-        console.error('Error fetching data:', error);
+        console.error('Error fetching data:', error.message);
       } finally {
         setLoading(false);
       }
     };
-    
+  
     fetchData();
   }, []);
+  
 
   // Filter members based on search term
   useEffect(() => {
@@ -158,35 +139,35 @@ const Dashboard = () => {
 
       // Update the RESIDENTS table
       const { error: residentError } = await supabase
-        .from('RESIDENTS')
+        .from('residents')
         .update(residentData)
         .eq('resident_id', updatedMember._id);
         
       if (residentError) throw residentError;
       
       // Update occupation information
-      if (updatedMember.occupation) {
-        const { error: occupationError } = await supabase
-          .from('OCCUPATION')
-          .upsert({
-            resident_id: updatedMember._id,
-            occupation: updatedMember.occupation
-          }, { onConflict: 'resident_id' });
+      // if (updatedMember.occupation) {
+      //   const { error: occupationError } = await supabase
+      //     .from('OCCUPATION')
+      //     .upsert({
+      //       resident_id: updatedMember._id,
+      //       occupation: updatedMember.occupation
+      //     }, { onConflict: 'resident_id' });
           
-        if (occupationError) throw occupationError;
-      }
+      //   if (occupationError) throw occupationError;
+      // }
       
-      // Update education information
-      if (updatedMember.education) {
-        const { error: educationError } = await supabase
-          .from('EDUCATION')
-          .upsert({
-            resident_id: updatedMember._id,
-            highest_qualification: updatedMember.education
-          }, { onConflict: 'resident_id' });
+      // // Update education information
+      // if (updatedMember.education) {
+      //   const { error: educationError } = await supabase
+      //     .from('EDUCATION')
+      //     .upsert({
+      //       resident_id: updatedMember._id,
+      //       highest_qualification: updatedMember.education
+      //     }, { onConflict: 'resident_id' });
           
-        if (educationError) throw educationError;
-      }
+      //   if (educationError) throw educationError;
+      // }
 
       // Refresh the data
       const index = familyMembers.findIndex(m => m.id === updatedMember._id);
@@ -197,12 +178,12 @@ const Dashboard = () => {
           name: updatedMember.name,
           age: updatedMember.age,
           relation: updatedMember.relation,
-          occupation: updatedMember.occupation,
+          occupation: updatedMember.occupation  || "",
           gender: updatedMember.gender,
           phoneNumber: updatedMember.phoneNumber,
           email: updatedMember.email,
           dateOfBirth: updatedMember.dateOfBirth,
-          education: updatedMember.education
+          education: updatedMember.education || ""
         };
         setFamilyMembers(updatedMembers);
       }
@@ -356,7 +337,7 @@ const Dashboard = () => {
                               }}
                             />
                             <Chip
-                              label={member.occupation}
+                              // label={member.occupation}
                               size="small"
                               sx={{ bgcolor: '#f5f5f5' }}
                             />

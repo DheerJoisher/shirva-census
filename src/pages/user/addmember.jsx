@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { 
-  Container, Box, Typography, TextField, Grid, FormControl, 
-  InputLabel, Select, MenuItem, FormControlLabel, Radio, 
+import {
+  Container, Box, Typography, TextField, Grid, FormControl,
+  InputLabel, Select, MenuItem, FormControlLabel, Radio,
   RadioGroup, Checkbox, FormGroup, Button, Paper, Divider,
   FormLabel, FormHelperText, Alert, Snackbar
 } from '@mui/material';
@@ -51,6 +51,45 @@ const AddMember = () => {
     SGNX_Parent: false, // was whatsappGroups.sgnxParent
   });
 
+  // const [formData, setFormData] = useState({
+  //   // Resident data
+  //   first_name: 'Rajesh',
+  //   middle_name: 'Kumar',
+  //   last_name: 'Shirva',
+  //   gender: 'Male', // from genderOptions
+  //   relation: 'Self', // from relationOptions
+  //   marital_status: 'Married', // from maritalOptions
+  //   date_of_birth: '1985-07-15',
+  //   phone_number: '9876543210',
+  //   email: 'rajesh.shirva@example.com',
+  //   lifemember: true,
+  //   household_id: null, // to be auto-generated
+  
+  //   // Occupation data
+  //   occupation: 'Engineer',
+  //   profession: 'Software Developer',
+  //   work_location: 'Mumbai',
+  
+  //   // Education data
+  //   highest_qualification: 'Master\'s', // from qualificationOptions
+  //   school_or_college_name: 'IIT Bombay',
+  //   year_of_completion: '2008',
+  
+  //   // Health data
+  //   blood_group: 'B+', // from bloodGroupOptions
+  //   mediclaim: true,
+  //   Thalassamia: 'Negative', // from thalassemiaOptions
+  //   G6PD: true,
+  
+  //   // WhatsApp group data
+  //   Shirva_Setu: true,
+  //   Dukhad_Nidhan: false,
+  //   SGNX: true,
+  //   SGNX_Parent: false,
+  // });
+  
+  
+
   const [notification, setNotification] = useState({
     open: false,
     message: '',
@@ -59,12 +98,12 @@ const AddMember = () => {
 
   const handleChange = (e) => {
     const { name, value, checked, type } = e.target;
-    
+
     setFormData({
       ...formData,
-      [name]: type === 'checkbox' ? checked : 
-              name === 'lifemember' || name === 'mediclaim' ? value === 'yes' : 
-              value
+      [name]: type === 'checkbox' ? checked :
+        name === 'lifemember' || name === 'mediclaim' ? value === 'yes' :
+          value
     });
   };
 
@@ -76,21 +115,23 @@ const AddMember = () => {
   };
 
   const closeNotification = () => {
-    setNotification({...notification, open: false});
+    setNotification({ ...notification, open: false });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+  
     try {
-      // Format date for database
-      const formattedDate = formData.date_of_birth ? 
-                            dayjs(formData.date_of_birth).format('YYYY-MM-DD') : 
-                            null;
-      
-      // Step 1: Insert into RESIDENTS table
+      const formattedDate = formData.date_of_birth
+        ? dayjs(formData.date_of_birth).format('YYYY-MM-DD')
+        : null;
+  
+      const isHeadOfFamily = formData.relation === 'Self';
+      let household_id = null;
+  
+      // STEP 1: Insert into RESIDENTS
       const { data: residentData, error: residentError } = await supabase
-        .from('RESIDENTS')
+        .from('residents')
         .insert([{
           first_name: formData.first_name,
           middle_name: formData.middle_name,
@@ -102,70 +143,100 @@ const AddMember = () => {
           phone_number: formData.phone_number,
           email: formData.email,
           lifemember: formData.lifemember,
-          household_id: formData.household_id || 1 // Default value, update as needed
+          household_id: null  // temporarily null; will update after household insert
         }])
         .select();
-
+  
       if (residentError) throw residentError;
-      
+  
       const resident_id = residentData[0].resident_id;
-      
-      // Step 2: Insert into OCCUPATION table
-      const { error: occupationError } = await supabase
-        .from('OCCUPATION')
-        .insert([{
-          resident_id: resident_id,
-          occupation: formData.occupation,
-          profession: formData.profession,
-          work_location: formData.work_location
-        }]);
-      
-      if (occupationError) throw occupationError;
-      
-      // Step 3: Insert into EDUCATION table
-      const { error: educationError } = await supabase
-        .from('EDUCATION')
-        .insert([{
-          resident_id: resident_id,
-          highest_qualification: formData.highest_qualification,
-          school_or_college_name: formData.school_or_college_name,
-          year_of_completion: formData.year_of_completion
-        }]);
-      
-      if (educationError) throw educationError;
-      
-      // Step 4: Insert into HEALTH_RECORDS table
-      const { error: healthError } = await supabase
-        .from('HEALTH_RECORDS')
-        .insert([{
-          resident_id: resident_id,
-          blood_group: formData.blood_group,
-          mediclaim: formData.mediclaim ? 'yes' : 'no',
-          Thalassamia: formData.Thalassamia,
-          G6PD: formData.G6PD ? 'yes' : 'no'
-        }]);
-      
-      if (healthError) throw healthError;
-      
-      // Step 5: Insert into WHATSAPP_GROUPS table
-      const { error: whatsappError } = await supabase
-        .from('WHATSAPP_GROUPS')
-        .insert([{
-          resident_id: resident_id,
-          Shirva_Setu: formData.Shirva_Setu,
-          Dukhad_Nidhan: formData.Dukhad_Nidhan,
-          SGNX: formData.SGNX,
-          SGNX_Parent: formData.SGNX_Parent
-        }]);
-      
-      if (whatsappError) throw whatsappError;
-      
+  
+      if (isHeadOfFamily) {
+        // STEP 2: Create new HOUSEHOLD entry
+        const { data: householdData, error: householdError } = await supabase
+          .from('household')
+          .insert([{
+            head_of_family_id: resident_id,
+            address: '', // optionally prompt or collect this
+            chapter: '',
+            number_of_members: 1
+          }])
+          .select();
+  
+        if (householdError) throw householdError;
+  
+        household_id = householdData[0].household_id;
+  
+        // STEP 3: Update RESIDENT with generated household_id
+        const { error: updateResidentError } = await supabase
+          .from('residents')
+          .update({ household_id })
+          .eq('resident_id', resident_id);
+  
+        if (updateResidentError) throw updateResidentError;
+  
+        // STEP 4: Store household_id locally for future additions
+        localStorage.setItem('household_id', household_id);
+  
+      } else {
+        // Not head of family — fetch household_id from local storage
+        household_id = localStorage.getItem('household_id');
+  
+        if (!household_id) {
+          throw new Error("Head of family must register first. No household_id found.");
+        }
+  
+        // STEP 3: Update RESIDENT with existing household_id
+        const { error: updateResidentError } = await supabase
+          .from('residents')
+          .update({ household_id })
+          .eq('resident_id', resident_id);
+  
+        if (updateResidentError) throw updateResidentError;
+      }
+  
+      // STEP 4: Insert into other related tables
+      // OCCUPATION
+      // await supabase.from('OCCUPATION').insert([{
+      //   resident_id,
+      //   occupation: formData.occupation,
+      //   profession: formData.profession,
+      //   work_location: formData.work_location
+      // }]);
+  
+      // // EDUCATION
+      // await supabase.from('EDUCATION').insert([{
+      //   resident_id,
+      //   highest_qualification: formData.highest_qualification,
+      //   school_or_college_name: formData.school_or_college_name,
+      //   year_of_completion: formData.year_of_completion
+      // }]);
+  
+      // // HEALTH
+      // await supabase.from('HEALTH_RECORDS').insert([{
+      //   resident_id,
+      //   blood_group: formData.blood_group,
+      //   mediclaim: formData.mediclaim ? 'yes' : 'no',
+      //   Thalassamia: formData.Thalassamia,
+      //   G6PD: formData.G6PD ? 'yes' : 'no'
+      // }]);
+  
+      // // WHATSAPP GROUPS
+      // await supabase.from('WHATSAPP_GROUPS').insert([{
+      //   resident_id,
+      //   Shirva_Setu: formData.Shirva_Setu,
+      //   Dukhad_Nidhan: formData.Dukhad_Nidhan,
+      //   SGNX: formData.SGNX,
+      //   SGNX_Parent: formData.SGNX_Parent
+      // }]);
+  
+      // Show success
       setNotification({
         open: true,
         message: 'Member added successfully!',
         severity: 'success'
       });
-      
+  
       // Reset form
       setFormData({
         first_name: '',
@@ -194,7 +265,7 @@ const AddMember = () => {
         SGNX: false,
         SGNX_Parent: false,
       });
-      
+  
     } catch (error) {
       console.error('Error adding member:', error);
       setNotification({
@@ -204,6 +275,7 @@ const AddMember = () => {
       });
     }
   };
+  
 
   // Options for select inputs
   const genderOptions = ['Male', 'Female', 'Other'];
@@ -222,7 +294,7 @@ const AddMember = () => {
             <Typography variant="h4" component="h1" gutterBottom align="center" sx={{ mb: 4 }}>
               Add Family Member
             </Typography>
-            
+
             <form onSubmit={handleSubmit}>
               {/* Personal Information Section */}
               <Box sx={{ mb: 4 }}>
@@ -230,7 +302,7 @@ const AddMember = () => {
                   Personal Information
                 </Typography>
                 <Divider sx={{ mb: 3 }} />
-                
+
                 <Grid container spacing={2}>
                   <Grid item xs={12} sm={4}>
                     <TextField
@@ -261,7 +333,7 @@ const AddMember = () => {
                       onChange={handleChange}
                     />
                   </Grid>
-                  
+
                   <Grid item xs={12} sm={6}>
                     <FormControl fullWidth required>
                       <InputLabel>Gender</InputLabel>
@@ -277,7 +349,7 @@ const AddMember = () => {
                       </Select>
                     </FormControl>
                   </Grid>
-                  
+
                   <Grid item xs={12} sm={6}>
                     <FormControl fullWidth required>
                       <InputLabel>Relation to Head of Family</InputLabel>
@@ -293,7 +365,7 @@ const AddMember = () => {
                       </Select>
                     </FormControl>
                   </Grid>
-                  
+
                   <Grid item xs={12} sm={6}>
                     <FormControl fullWidth required>
                       <InputLabel>Marital Status</InputLabel>
@@ -309,7 +381,7 @@ const AddMember = () => {
                       </Select>
                     </FormControl>
                   </Grid>
-                  
+
                   <Grid item xs={12} sm={6}>
                     <LocalizationProvider dateAdapter={AdapterDayjs}>
                       <DatePicker
@@ -322,14 +394,14 @@ const AddMember = () => {
                   </Grid>
                 </Grid>
               </Box>
-              
+
               {/* Contact Information */}
               <Box sx={{ mb: 4 }}>
                 <Typography variant="h6" component="h2" sx={{ mb: 2, color: 'primary.main' }}>
                   Contact Information
                 </Typography>
                 <Divider sx={{ mb: 3 }} />
-                
+
                 <Grid container spacing={2}>
                   <Grid item xs={12} sm={6}>
                     <TextField
@@ -351,7 +423,7 @@ const AddMember = () => {
                       type="email"
                     />
                   </Grid>
-                  
+
                   <Grid item xs={12}>
                     <FormControl component="fieldset">
                       <FormLabel component="legend">Life Member</FormLabel>
@@ -368,14 +440,14 @@ const AddMember = () => {
                   </Grid>
                 </Grid>
               </Box>
-              
+
               {/* Professional Information */}
               <Box sx={{ mb: 4 }}>
                 <Typography variant="h6" component="h2" sx={{ mb: 2, color: 'primary.main' }}>
                   Professional Information
                 </Typography>
                 <Divider sx={{ mb: 3 }} />
-                
+
                 <Grid container spacing={2}>
                   <Grid item xs={12} sm={6}>
                     <TextField
@@ -406,14 +478,14 @@ const AddMember = () => {
                   </Grid>
                 </Grid>
               </Box>
-              
+
               {/* Educational Information */}
               <Box sx={{ mb: 4 }}>
                 <Typography variant="h6" component="h2" sx={{ mb: 2, color: 'primary.main' }}>
                   Educational Information
                 </Typography>
                 <Divider sx={{ mb: 3 }} />
-                
+
                 <Grid container spacing={2}>
                   <Grid item xs={12} sm={6}>
                     <FormControl fullWidth>
@@ -452,14 +524,14 @@ const AddMember = () => {
                   </Grid>
                 </Grid>
               </Box>
-              
+
               {/* Health Information */}
               <Box sx={{ mb: 4 }}>
                 <Typography variant="h6" component="h2" sx={{ mb: 2, color: 'primary.main' }}>
                   Health Information
                 </Typography>
                 <Divider sx={{ mb: 3 }} />
-                
+
                 <Grid container spacing={2}>
                   <Grid item xs={12} sm={6}>
                     <FormControl fullWidth>
@@ -476,7 +548,7 @@ const AddMember = () => {
                       </Select>
                     </FormControl>
                   </Grid>
-                  
+
                   <Grid item xs={12} sm={6}>
                     <FormControl component="fieldset">
                       <FormLabel component="legend">Mediclaim</FormLabel>
@@ -491,7 +563,7 @@ const AddMember = () => {
                       </RadioGroup>
                     </FormControl>
                   </Grid>
-                  
+
                   <Grid item xs={12} sm={6}>
                     <FormControl fullWidth>
                       <InputLabel>Thalassemia</InputLabel>
@@ -507,14 +579,14 @@ const AddMember = () => {
                       </Select>
                     </FormControl>
                   </Grid>
-                  
+
                   <Grid item xs={12} sm={6}>
                     <FormControlLabel
                       control={
-                        <Checkbox 
-                          checked={formData.G6PD} 
-                          onChange={handleChange} 
-                          name="G6PD" 
+                        <Checkbox
+                          checked={formData.G6PD}
+                          onChange={handleChange}
+                          name="G6PD"
                         />
                       }
                       label="G6PD Checked"
@@ -522,53 +594,53 @@ const AddMember = () => {
                   </Grid>
                 </Grid>
               </Box>
-              
+
               {/* WhatsApp Groups */}
               <Box sx={{ mb: 4 }}>
                 <Typography variant="h6" component="h2" sx={{ mb: 2, color: 'primary.main' }}>
                   WhatsApp Group Membership
                 </Typography>
                 <Divider sx={{ mb: 3 }} />
-                
+
                 <FormControl component="fieldset" sx={{ ml: 2 }}>
                   <FormLabel component="legend">Member of the following WhatsApp Groups:</FormLabel>
                   <FormGroup>
                     <FormControlLabel
                       control={
-                        <Checkbox 
-                          checked={formData.Shirva_Setu} 
-                          onChange={handleChange} 
-                          name="Shirva_Setu" 
+                        <Checkbox
+                          checked={formData.Shirva_Setu}
+                          onChange={handleChange}
+                          name="Shirva_Setu"
                         />
                       }
                       label="Shirva Setu"
                     />
                     <FormControlLabel
                       control={
-                        <Checkbox 
-                          checked={formData.Dukhad_Nidhan} 
-                          onChange={handleChange} 
-                          name="Dukhad_Nidhan" 
+                        <Checkbox
+                          checked={formData.Dukhad_Nidhan}
+                          onChange={handleChange}
+                          name="Dukhad_Nidhan"
                         />
                       }
                       label="Dukhad Nidhan"
                     />
                     <FormControlLabel
                       control={
-                        <Checkbox 
-                          checked={formData.SGNX} 
-                          onChange={handleChange} 
-                          name="SGNX" 
+                        <Checkbox
+                          checked={formData.SGNX}
+                          onChange={handleChange}
+                          name="SGNX"
                         />
                       }
                       label="SGNX"
                     />
                     <FormControlLabel
                       control={
-                        <Checkbox 
-                          checked={formData.SGNX_Parent} 
-                          onChange={handleChange} 
-                          name="SGNX_Parent" 
+                        <Checkbox
+                          checked={formData.SGNX_Parent}
+                          onChange={handleChange}
+                          name="SGNX_Parent"
                         />
                       }
                       label="SGNX-Parent"
@@ -576,13 +648,13 @@ const AddMember = () => {
                   </FormGroup>
                 </FormControl>
               </Box>
-              
+
               {/* Submit Button */}
               <Box sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
-                <Button 
-                  type="submit" 
-                  variant="contained" 
-                  color="primary" 
+                <Button
+                  type="submit"
+                  variant="contained"
+                  color="primary"
                   size="large"
                   sx={{ minWidth: 200 }}
                 >
@@ -593,21 +665,21 @@ const AddMember = () => {
           </Paper>
         </Container>
       </Box>
-      
-      <Snackbar 
-        open={notification.open} 
-        autoHideDuration={6000} 
+
+      <Snackbar
+        open={notification.open}
+        autoHideDuration={6000}
         onClose={closeNotification}
       >
-        <Alert 
-          onClose={closeNotification} 
-          severity={notification.severity} 
+        <Alert
+          onClose={closeNotification}
+          severity={notification.severity}
           sx={{ width: '100%' }}
         >
           {notification.message}
         </Alert>
       </Snackbar>
-      
+
       <Footer />
     </>
   );
