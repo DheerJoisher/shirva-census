@@ -89,15 +89,19 @@ const FamilyDetails = () => {
 
           <div className="mb-4">
             <label htmlFor="chapter" className="block mb-2 font-medium">Chapter</label>
-            <input
-              type="text"
+            <select
               id="chapter"
               value={chapter}
               onChange={(e) => setChapter(e.target.value)}
               className="w-full p-2 border rounded"
-              placeholder="Enter your chapter"
               required
-            />
+            >
+              <option value="" disabled>Select your chapter</option>
+              <option value="Chapter 1">Mulund-Ghatkopar</option>
+              <option value="Chapter 2">Western Chapter</option>
+              <option value="Chapter 3">Kutchh Chapter</option>
+              <option value="Chapter 4">Vapi-Valsad Chapter</option>
+            </select>
           </div>
 
           <button 

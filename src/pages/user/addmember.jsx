@@ -279,11 +279,52 @@ const AddMember = () => {
 
   // Options for select inputs
   const genderOptions = ['Male', 'Female', 'Other'];
-  const relationOptions = ['Self', 'Spouse', 'Son', 'Daughter', 'Father', 'Mother', 'Other'];
-  const maritalOptions = ['Single', 'Married', 'Divorced', 'Widowed'];
+  const relationOptions = [
+    'Self',
+    'Husband',
+    'Wife',
+    'Son',
+    'Daughter-in-law',
+    'Grand Son',
+    'Grand Daughter',
+    'Daughter',
+    'Brother',
+    'Sister'
+  ];
+  const maritalOptions = ['Single', 'Married'];
   const bloodGroupOptions = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-', 'Unknown'];
   const thalassemiaOptions = ['Major', 'Minor', 'Negative', 'Not Checked'];
   const qualificationOptions = ['Primary', 'Secondary', 'Higher Secondary', 'Diploma', 'Bachelor\'s', 'Master\'s', 'Doctorate', 'Other'];
+  
+  // New option arrays for occupation and profession
+  const occupationOptions = [
+    'Student',
+    'Employed',
+    'Self-employed',
+    'Business Owner',
+    'Homemaker',
+    'Retired',
+    'Unemployed',
+    'Other'
+  ];
+  
+  const professionOptions = [
+    'Doctor',
+    'Engineer',
+    'Teacher/Professor',
+    'Lawyer',
+    'Accountant',
+    'IT Professional',
+    'Government Employee',
+    'Banking Professional',
+    'Business',
+    'Agriculture',
+    'Skilled Trade',
+    'Nurse/Healthcare Worker',
+    'Artist/Creative Professional',
+    'Not Applicable',
+    'Other'
+  ];
 
   return (
     <>
@@ -450,22 +491,34 @@ const AddMember = () => {
 
                 <Grid container spacing={2}>
                   <Grid item xs={12} sm={6}>
-                    <TextField
-                      fullWidth
-                      label="Occupation"
-                      name="occupation"
-                      value={formData.occupation}
-                      onChange={handleChange}
-                    />
+                    <FormControl fullWidth>
+                      <InputLabel>Occupation</InputLabel>
+                      <Select
+                        name="occupation"
+                        value={formData.occupation}
+                        onChange={handleChange}
+                        label="Occupation"
+                      >
+                        {occupationOptions.map(option => (
+                          <MenuItem key={option} value={option}>{option}</MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
                   </Grid>
                   <Grid item xs={12} sm={6}>
-                    <TextField
-                      fullWidth
-                      label="Profession"
-                      name="profession"
-                      value={formData.profession}
-                      onChange={handleChange}
-                    />
+                    <FormControl fullWidth>
+                      <InputLabel>Profession</InputLabel>
+                      <Select
+                        name="profession"
+                        value={formData.profession}
+                        onChange={handleChange}
+                        label="Profession"
+                      >
+                        {professionOptions.map(option => (
+                          <MenuItem key={option} value={option}>{option}</MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
                   </Grid>
                   <Grid item xs={12}>
                     <TextField

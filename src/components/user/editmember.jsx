@@ -3,10 +3,14 @@ import {
   Dialog, DialogTitle, DialogContent, DialogActions,
   Button, TextField, Grid, MenuItem, FormControl,
   FormHelperText, Typography, Divider, CircularProgress,
-  Alert, Box, Checkbox, FormControlLabel, Select, InputLabel
+  Alert, Box, Checkbox, FormControlLabel, Select, InputLabel,
+  Radio, RadioGroup, FormLabel, FormGroup
 } from '@mui/material';
-import axios from 'axios';
+import { LocalizationProvider } from '@mui/x-date-pickers';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { DatePicker } from '@mui/x-date-pickers';
 import { supabase } from '../../supabaseClient';
+import dayjs from 'dayjs';
 
 const EditMemberModal = ({ show, handleClose, member, onUpdate }) => {
   const [formData, setFormData] = useState({
@@ -17,7 +21,7 @@ const EditMemberModal = ({ show, handleClose, member, onUpdate }) => {
     gender: '',
     relation: '',
     marital_status: '',
-    date_of_birth: '',
+    date_of_birth: null,
     phone_number: '',
     email: '',
     lifemember: false,
@@ -35,9 +39,9 @@ const EditMemberModal = ({ show, handleClose, member, onUpdate }) => {
     
     // HEALTH_RECORDS table
     blood_group: '',
-    mediclaim: '',
+    mediclaim: false,
     Thalassamia: '',
-    G6PD: '',
+    G6PD: false,
     
     // WHATSAPP_GROUPS table
     Shirva_Setu: false,
@@ -52,6 +56,8 @@ const EditMemberModal = ({ show, handleClose, member, onUpdate }) => {
   
   useEffect(() => {
     if (member) {
+      const dob = member.date_of_birth ? dayjs(member.date_of_birth) : null;
+      
       setFormData({
         // RESIDENTS table
         first_name: member.first_name || '',
@@ -60,7 +66,7 @@ const EditMemberModal = ({ show, handleClose, member, onUpdate }) => {
         gender: member.gender || '',
         relation: member.relation || '',
         marital_status: member.marital_status || '',
-        date_of_birth: member.date_of_birth || '',
+        date_of_birth: dob,
         phone_number: member.phone_number || '',
         email: member.email || '',
         lifemember: member.lifemember || false,
@@ -78,9 +84,9 @@ const EditMemberModal = ({ show, handleClose, member, onUpdate }) => {
         
         // HEALTH_RECORDS table
         blood_group: member.health_records?.blood_group || '',
-        mediclaim: member.health_records?.mediclaim || '',
+        mediclaim: member.health_records?.mediclaim === 'yes' || false,
         Thalassamia: member.health_records?.Thalassamia || '',
-        G6PD: member.health_records?.G6PD || '',
+        G6PD: member.health_records?.G6PD === 'yes' || false,
         
         // WHATSAPP_GROUPS table
         Shirva_Setu: member.whatsapp_groups?.Shirva_Setu || false,
@@ -95,7 +101,16 @@ const EditMemberModal = ({ show, handleClose, member, onUpdate }) => {
     const { name, value, checked, type } = e.target;
     setFormData(prev => ({ 
       ...prev, 
-      [name]: type === 'checkbox' ? checked : value 
+      [name]: type === 'checkbox' ? checked : 
+              name === 'lifemember' || name === 'mediclaim' ? value === 'yes' : 
+              value 
+    }));
+  };
+  
+  const handleDateChange = (date) => {
+    setFormData(prev => ({
+      ...prev,
+      date_of_birth: date
     }));
   };
   
@@ -106,6 +121,10 @@ const EditMemberModal = ({ show, handleClose, member, onUpdate }) => {
     setSuccess(false);
     
     try {
+      const formattedDate = formData.date_of_birth
+        ? dayjs(formData.date_of_birth).format('YYYY-MM-DD')
+        : null;
+        
       // Organize data according to tables
       const residentData = {
         first_name: formData.first_name,
@@ -114,7 +133,7 @@ const EditMemberModal = ({ show, handleClose, member, onUpdate }) => {
         gender: formData.gender,
         relation: formData.relation,
         marital_status: formData.marital_status,
-        date_of_birth: formData.date_of_birth,
+        date_of_birth: formattedDate,
         phone_number: formData.phone_number,
         email: formData.email,
         lifemember: formData.lifemember,
@@ -135,9 +154,9 @@ const EditMemberModal = ({ show, handleClose, member, onUpdate }) => {
       
       const healthData = {
         blood_group: formData.blood_group,
-        mediclaim: formData.mediclaim,
+        mediclaim: formData.mediclaim ? 'yes' : 'no',
         Thalassamia: formData.Thalassamia,
-        G6PD: formData.G6PD
+        G6PD: formData.G6PD ? 'yes' : 'no'
       };
       
       const whatsappData = {
@@ -217,17 +236,53 @@ const EditMemberModal = ({ show, handleClose, member, onUpdate }) => {
     }
   };
   
-  const sectionStyle = {
-    marginTop: '24px',
-    marginBottom: '16px'
-  };
+  // Options for select inputs
+  const genderOptions = ['Male', 'Female', 'Other'];
+  const relationOptions = [
+    'Self',
+    'Husband',
+    'Wife',
+    'Son',
+    'Daughter-in-law',
+    'Grand Son',
+    'Grand Daughter',
+    'Daughter',
+    'Brother',
+    'Sister'
+  ];
+  const maritalOptions = ['Single', 'Married'];
+  const bloodGroupOptions = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-', 'Unknown'];
+  const thalassemiaOptions = ['Major', 'Minor', 'Negative', 'Not Checked'];
+  const qualificationOptions = ['Primary', 'Secondary', 'Higher Secondary', 'Diploma', 'Bachelor\'s', 'Master\'s', 'Doctorate', 'Other'];
   
-  const sectionTitleStyle = {
-    color: '#1976d2',
-    fontWeight: 600,
-    fontSize: '1.1rem',
-    marginBottom: '8px'
-  };
+  const occupationOptions = [
+    'Student',
+    'Employed',
+    'Self-employed',
+    'Business Owner',
+    'Homemaker',
+    'Retired',
+    'Unemployed',
+    'Other'
+  ];
+  
+  const professionOptions = [
+    'Doctor',
+    'Engineer',
+    'Teacher/Professor',
+    'Lawyer',
+    'Accountant',
+    'IT Professional',
+    'Government Employee',
+    'Banking Professional',
+    'Business',
+    'Agriculture',
+    'Skilled Trade',
+    'Nurse/Healthcare Worker',
+    'Artist/Creative Professional',
+    'Not Applicable',
+    'Other'
+  ];
   
   return (
     <Dialog 
@@ -260,397 +315,390 @@ const EditMemberModal = ({ show, handleClose, member, onUpdate }) => {
         {success && <Alert severity="success" sx={{ mb: 2 }}>Member updated successfully!</Alert>}
         
         <form onSubmit={handleSubmit}>
-          <Box sx={sectionStyle}>
-            <Typography sx={sectionTitleStyle}>Personal Information</Typography>
-            <Divider sx={{ mb: 2 }} />
+          {/* Personal Information Section */}
+          <Box sx={{ mb: 4 }}>
+            <Typography variant="h6" component="h2" sx={{ mb: 2, color: 'primary.main' }}>
+              Personal Information
+            </Typography>
+            <Divider sx={{ mb: 3 }} />
+            
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={4}>
+                <TextField
+                  fullWidth
+                  required
+                  label="First Name"
+                  name="first_name"
+                  value={formData.first_name}
+                  onChange={handleChange}
+                />
+              </Grid>
+              
+              <Grid item xs={12} sm={4}>
+                <TextField
+                  fullWidth
+                  label="Middle Name"
+                  name="middle_name"
+                  value={formData.middle_name}
+                  onChange={handleChange}
+                />
+              </Grid>
+              
+              <Grid item xs={12} sm={4}>
+                <TextField
+                  fullWidth
+                  required
+                  label="Last Name"
+                  name="last_name"
+                  value={formData.last_name}
+                  onChange={handleChange}
+                />
+              </Grid>
+              
+              <Grid item xs={12} sm={6}>
+                <FormControl fullWidth required>
+                  <InputLabel>Gender</InputLabel>
+                  <Select
+                    name="gender"
+                    value={formData.gender}
+                    onChange={handleChange}
+                    label="Gender"
+                  >
+                    {genderOptions.map(option => (
+                      <MenuItem key={option} value={option}>{option}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+              
+              <Grid item xs={12} sm={6}>
+                <FormControl fullWidth required>
+                  <InputLabel>Relation to Head of Family</InputLabel>
+                  <Select
+                    name="relation"
+                    value={formData.relation}
+                    onChange={handleChange}
+                    label="Relation to Head of Family"
+                  >
+                    {relationOptions.map(option => (
+                      <MenuItem key={option} value={option}>{option}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+              
+              <Grid item xs={12} sm={6}>
+                <FormControl fullWidth required>
+                  <InputLabel>Marital Status</InputLabel>
+                  <Select
+                    name="marital_status"
+                    value={formData.marital_status}
+                    onChange={handleChange}
+                    label="Marital Status"
+                  >
+                    {maritalOptions.map(option => (
+                      <MenuItem key={option} value={option}>{option}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+              
+              <Grid item xs={12} sm={6}>
+                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                  <DatePicker
+                    label="Date of Birth"
+                    value={formData.date_of_birth}
+                    onChange={handleDateChange}
+                    slotProps={{ textField: { fullWidth: true, required: true } }}
+                  />
+                </LocalizationProvider>
+              </Grid>
+            </Grid>
           </Box>
           
-          <Grid container spacing={3}>
-            <Grid item md={4} xs={12}>
-              <TextField
-                fullWidth
-                label="First Name"
-                name="first_name"
-                value={formData.first_name}
-                onChange={handleChange}
-                required
-                variant="outlined"
-                placeholder="Enter first name"
-              />
-            </Grid>
+          {/* Contact Information */}
+          <Box sx={{ mb: 4 }}>
+            <Typography variant="h6" component="h2" sx={{ mb: 2, color: 'primary.main' }}>
+              Contact Information
+            </Typography>
+            <Divider sx={{ mb: 3 }} />
             
-            <Grid item md={4} xs={12}>
-              <TextField
-                fullWidth
-                label="Middle Name"
-                name="middle_name"
-                value={formData.middle_name}
-                onChange={handleChange}
-                variant="outlined"
-                placeholder="Enter middle name"
-              />
-            </Grid>
-            
-            <Grid item md={4} xs={12}>
-              <TextField
-                fullWidth
-                label="Last Name"
-                name="last_name"
-                value={formData.last_name}
-                onChange={handleChange}
-                required
-                variant="outlined"
-                placeholder="Enter last name"
-              />
-            </Grid>
-          </Grid>
-          
-          <Grid container spacing={3} sx={{ mt: 0 }}>
-            <Grid item md={6} xs={12}>
-              <TextField
-                fullWidth
-                select
-                label="Gender"
-                name="gender"
-                value={formData.gender}
-                onChange={handleChange}
-                required
-                variant="outlined"
-              >
-                <MenuItem value="">Select Gender</MenuItem>
-                <MenuItem value="Male">Male</MenuItem>
-                <MenuItem value="Female">Female</MenuItem>
-                <MenuItem value="Other">Other</MenuItem>
-              </TextField>
-            </Grid>
-            
-            <Grid item md={6} xs={12}>
-              <TextField
-                fullWidth
-                label="Date of Birth"
-                name="date_of_birth"
-                type="date"
-                value={formData.date_of_birth}
-                onChange={handleChange}
-                variant="outlined"
-                InputLabelProps={{ shrink: true }}
-                helperText="Format: YYYY-MM-DD"
-              />
-            </Grid>
-          </Grid>
-          
-          <Grid container spacing={3} sx={{ mt: 0 }}>
-            <Grid item md={6} xs={12}>
-              <TextField
-                fullWidth
-                select
-                label="Marital Status"
-                name="marital_status"
-                value={formData.marital_status}
-                onChange={handleChange}
-                variant="outlined"
-              >
-                <MenuItem value="">Select Status</MenuItem>
-                <MenuItem value="Single">Single</MenuItem>
-                <MenuItem value="Married">Married</MenuItem>
-                <MenuItem value="Divorced">Divorced</MenuItem>
-                <MenuItem value="Widowed">Widowed</MenuItem>
-              </TextField>
-            </Grid>
-            
-            <Grid item md={6} xs={12}>
-              <TextField
-                fullWidth
-                label="Relation to Head"
-                name="relation"
-                value={formData.relation}
-                onChange={handleChange}
-                variant="outlined"
-                placeholder="e.g. Son, Daughter, Spouse"
-              />
-            </Grid>
-          </Grid>
-          
-          <Grid container spacing={3} sx={{ mt: 0 }}>
-            <Grid item xs={12}>
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={formData.lifemember}
-                    onChange={handleChange}
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Phone Number"
+                  name="phone_number"
+                  value={formData.phone_number}
+                  onChange={handleChange}
+                  type="tel"
+                />
+              </Grid>
+              
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  type="email"
+                />
+              </Grid>
+              
+              <Grid item xs={12}>
+                <FormControl component="fieldset">
+                  <FormLabel component="legend">Life Member</FormLabel>
+                  <RadioGroup
+                    row
                     name="lifemember"
-                    color="primary"
-                  />
-                }
-                label="Life Member"
-              />
-            </Grid>
-          </Grid>
-          
-          <Box sx={sectionStyle}>
-            <Typography sx={sectionTitleStyle}>Education</Typography>
-            <Divider sx={{ mb: 2 }} />
-          </Box>
-          
-          <Grid container spacing={3}>
-            <Grid item md={6} xs={12}>
-              <TextField
-                fullWidth
-                label="Highest Qualification"
-                name="highest_qualification"
-                value={formData.highest_qualification}
-                onChange={handleChange}
-                variant="outlined"
-                placeholder="E.g. B.Tech, MBA, Ph.D"
-              />
-            </Grid>
-            
-            <Grid item md={6} xs={12}>
-              <TextField
-                fullWidth
-                label="School/College Name"
-                name="school_or_college_name"
-                value={formData.school_or_college_name}
-                onChange={handleChange}
-                variant="outlined"
-                placeholder="Name of institution"
-              />
-            </Grid>
-          </Grid>
-          
-          <Grid container spacing={3} sx={{ mt: 0 }}>
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="Year of Completion"
-                name="year_of_completion"
-                type="number"
-                value={formData.year_of_completion}
-                onChange={handleChange}
-                variant="outlined"
-                placeholder="E.g. 2018"
-                inputProps={{ min: 1950, max: new Date().getFullYear() }}
-              />
-            </Grid>
-          </Grid>
-          
-          <Box sx={sectionStyle}>
-            <Typography sx={sectionTitleStyle}>Occupation</Typography>
-            <Divider sx={{ mb: 2 }} />
-          </Box>
-          
-          <Grid container spacing={3}>
-            <Grid item md={4} xs={12}>
-              <TextField
-                fullWidth
-                label="Occupation"
-                name="occupation"
-                value={formData.occupation}
-                onChange={handleChange}
-                variant="outlined"
-                placeholder="E.g. Engineer, Doctor"
-              />
-            </Grid>
-            
-            <Grid item md={4} xs={12}>
-              <TextField
-                fullWidth
-                label="Profession"
-                name="profession"
-                value={formData.profession}
-                onChange={handleChange}
-                variant="outlined"
-                placeholder="E.g. Software Developer, Surgeon"
-              />
-            </Grid>
-            
-            <Grid item md={4} xs={12}>
-              <TextField
-                fullWidth
-                label="Work Location"
-                name="work_location"
-                value={formData.work_location}
-                onChange={handleChange}
-                variant="outlined"
-                placeholder="City or place of work"
-              />
-            </Grid>
-          </Grid>
-          
-          <Box sx={sectionStyle}>
-            <Typography sx={sectionTitleStyle}>Health Information</Typography>
-            <Divider sx={{ mb: 2 }} />
-          </Box>
-          
-          <Grid container spacing={3}>
-            <Grid item md={3} xs={6}>
-              <TextField
-                fullWidth
-                select
-                label="Blood Group"
-                name="blood_group"
-                value={formData.blood_group}
-                onChange={handleChange}
-                variant="outlined"
-              >
-                <MenuItem value="">Select Blood Group</MenuItem>
-                <MenuItem value="A+">A+</MenuItem>
-                <MenuItem value="A-">A-</MenuItem>
-                <MenuItem value="B+">B+</MenuItem>
-                <MenuItem value="B-">B-</MenuItem>
-                <MenuItem value="AB+">AB+</MenuItem>
-                <MenuItem value="AB-">AB-</MenuItem>
-                <MenuItem value="O+">O+</MenuItem>
-                <MenuItem value="O-">O-</MenuItem>
-              </TextField>
-            </Grid>
-            
-            <Grid item md={3} xs={6}>
-              <TextField
-                fullWidth
-                label="Mediclaim"
-                name="mediclaim"
-                value={formData.mediclaim}
-                onChange={handleChange}
-                variant="outlined"
-                placeholder="Mediclaim details"
-              />
-            </Grid>
-            
-            <Grid item md={3} xs={6}>
-              <TextField
-                fullWidth
-                label="Thalassamia"
-                name="Thalassamia"
-                value={formData.Thalassamia}
-                onChange={handleChange}
-                variant="outlined"
-                placeholder="Thalassamia status"
-              />
-            </Grid>
-            
-            <Grid item md={3} xs={6}>
-              <TextField
-                fullWidth
-                label="G6PD"
-                name="G6PD"
-                value={formData.G6PD}
-                onChange={handleChange}
-                variant="outlined"
-                placeholder="G6PD status"
-              />
-            </Grid>
-          </Grid>
-          
-          <Box sx={sectionStyle}>
-            <Typography sx={sectionTitleStyle}>WhatsApp Groups</Typography>
-            <Divider sx={{ mb: 2 }} />
-          </Box>
-          
-          <Grid container spacing={3}>
-            <Grid item xs={12} sm={6} md={3}>
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={formData.Shirva_Setu}
+                    value={formData.lifemember ? 'yes' : 'no'}
                     onChange={handleChange}
-                    name="Shirva_Setu"
-                    color="primary"
-                  />
-                }
-                label="Shirva Setu"
-              />
+                  >
+                    <FormControlLabel value="yes" control={<Radio />} label="Yes" />
+                    <FormControlLabel value="no" control={<Radio />} label="No" />
+                  </RadioGroup>
+                </FormControl>
+              </Grid>
+              
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Household ID"
+                  name="household_id"
+                  value={formData.household_id}
+                  variant="outlined"
+                  disabled
+                  sx={{ bgcolor: '#f5f5f5' }}
+                />
+                <FormHelperText>Household ID cannot be changed</FormHelperText>
+              </Grid>
             </Grid>
-            
-            <Grid item xs={12} sm={6} md={3}>
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={formData.Dukhad_Nidhan}
-                    onChange={handleChange}
-                    name="Dukhad_Nidhan"
-                    color="primary"
-                  />
-                }
-                label="Dukhad Nidhan"
-              />
-            </Grid>
-            
-            <Grid item xs={12} sm={6} md={3}>
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={formData.SGNX}
-                    onChange={handleChange}
-                    name="SGNX"
-                    color="primary"
-                  />
-                }
-                label="SGNX"
-              />
-            </Grid>
-            
-            <Grid item xs={12} sm={6} md={3}>
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={formData.SGNX_Parent}
-                    onChange={handleChange}
-                    name="SGNX_Parent"
-                    color="primary"
-                  />
-                }
-                label="SGNX Parent"
-              />
-            </Grid>
-          </Grid>
-          
-          <Box sx={sectionStyle}>
-            <Typography sx={sectionTitleStyle}>Contact Information</Typography>
-            <Divider sx={{ mb: 2 }} />
           </Box>
           
-          <Grid container spacing={3}>
-            <Grid item md={6} xs={12}>
-              <TextField
-                fullWidth
-                label="Phone Number"
-                name="phone_number"
-                value={formData.phone_number}
-                onChange={handleChange}
-                variant="outlined"
-                placeholder="e.g. 9876543210"
-              />
-            </Grid>
+          {/* Professional Information */}
+          <Box sx={{ mb: 4 }}>
+            <Typography variant="h6" component="h2" sx={{ mb: 2, color: 'primary.main' }}>
+              Professional Information
+            </Typography>
+            <Divider sx={{ mb: 3 }} />
             
-            <Grid item md={6} xs={12}>
-              <TextField
-                fullWidth
-                label="Email"
-                name="email"
-                type="email"
-                value={formData.email}
-                onChange={handleChange}
-                variant="outlined"
-                placeholder="example@email.com"
-              />
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <FormControl fullWidth>
+                  <InputLabel>Occupation</InputLabel>
+                  <Select
+                    name="occupation"
+                    value={formData.occupation}
+                    onChange={handleChange}
+                    label="Occupation"
+                  >
+                    {occupationOptions.map(option => (
+                      <MenuItem key={option} value={option}>{option}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+              
+              <Grid item xs={12} sm={6}>
+                <FormControl fullWidth>
+                  <InputLabel>Profession</InputLabel>
+                  <Select
+                    name="profession"
+                    value={formData.profession}
+                    onChange={handleChange}
+                    label="Profession"
+                  >
+                    {professionOptions.map(option => (
+                      <MenuItem key={option} value={option}>{option}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+              
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Work Location"
+                  name="work_location"
+                  value={formData.work_location}
+                  onChange={handleChange}
+                />
+              </Grid>
             </Grid>
-          </Grid>
+          </Box>
           
-          <Grid container spacing={3} sx={{ mt: 0 }}>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Household ID"
-                name="household_id"
-                value={formData.household_id}
-                variant="outlined"
-                disabled
-                sx={{ bgcolor: '#f5f5f5' }}
-              />
-              <FormHelperText>Household ID cannot be changed</FormHelperText>
+          {/* Educational Information */}
+          <Box sx={{ mb: 4 }}>
+            <Typography variant="h6" component="h2" sx={{ mb: 2, color: 'primary.main' }}>
+              Educational Information
+            </Typography>
+            <Divider sx={{ mb: 3 }} />
+            
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <FormControl fullWidth>
+                  <InputLabel>Highest Qualification</InputLabel>
+                  <Select
+                    name="highest_qualification"
+                    value={formData.highest_qualification}
+                    onChange={handleChange}
+                    label="Highest Qualification"
+                  >
+                    {qualificationOptions.map(option => (
+                      <MenuItem key={option} value={option}>{option}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+              
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Name of School/College"
+                  name="school_or_college_name"
+                  value={formData.school_or_college_name}
+                  onChange={handleChange}
+                />
+              </Grid>
+              
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Year of Completion"
+                  name="year_of_completion"
+                  value={formData.year_of_completion}
+                  onChange={handleChange}
+                  type="number"
+                  InputProps={{ inputProps: { min: 1950, max: new Date().getFullYear() } }}
+                />
+              </Grid>
             </Grid>
-          </Grid>
+          </Box>
+          
+          {/* Health Information */}
+          <Box sx={{ mb: 4 }}>
+            <Typography variant="h6" component="h2" sx={{ mb: 2, color: 'primary.main' }}>
+              Health Information
+            </Typography>
+            <Divider sx={{ mb: 3 }} />
+            
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <FormControl fullWidth>
+                  <InputLabel>Blood Group</InputLabel>
+                  <Select
+                    name="blood_group"
+                    value={formData.blood_group}
+                    onChange={handleChange}
+                    label="Blood Group"
+                  >
+                    {bloodGroupOptions.map(option => (
+                      <MenuItem key={option} value={option}>{option}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+              
+              <Grid item xs={12} sm={6}>
+                <FormControl component="fieldset">
+                  <FormLabel component="legend">Mediclaim</FormLabel>
+                  <RadioGroup
+                    row
+                    name="mediclaim"
+                    value={formData.mediclaim ? 'yes' : 'no'}
+                    onChange={handleChange}
+                  >
+                    <FormControlLabel value="yes" control={<Radio />} label="Yes" />
+                    <FormControlLabel value="no" control={<Radio />} label="No" />
+                  </RadioGroup>
+                </FormControl>
+              </Grid>
+              
+              <Grid item xs={12} sm={6}>
+                <FormControl fullWidth>
+                  <InputLabel>Thalassemia</InputLabel>
+                  <Select
+                    name="Thalassamia"
+                    value={formData.Thalassamia}
+                    onChange={handleChange}
+                    label="Thalassemia"
+                  >
+                    {thalassemiaOptions.map(option => (
+                      <MenuItem key={option} value={option}>{option}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+              
+              <Grid item xs={12} sm={6}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={formData.G6PD}
+                      onChange={handleChange}
+                      name="G6PD"
+                    />
+                  }
+                  label="G6PD Checked"
+                />
+              </Grid>
+            </Grid>
+          </Box>
+          
+          {/* WhatsApp Groups */}
+          <Box sx={{ mb: 4 }}>
+            <Typography variant="h6" component="h2" sx={{ mb: 2, color: 'primary.main' }}>
+              WhatsApp Group Membership
+            </Typography>
+            <Divider sx={{ mb: 3 }} />
+            
+            <FormControl component="fieldset" sx={{ ml: 2 }}>
+              <FormLabel component="legend">Member of the following WhatsApp Groups:</FormLabel>
+              <FormGroup>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={formData.Shirva_Setu}
+                      onChange={handleChange}
+                      name="Shirva_Setu"
+                    />
+                  }
+                  label="Shirva Setu"
+                />
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={formData.Dukhad_Nidhan}
+                      onChange={handleChange}
+                      name="Dukhad_Nidhan"
+                    />
+                  }
+                  label="Dukhad Nidhan"
+                />
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={formData.SGNX}
+                      onChange={handleChange}
+                      name="SGNX"
+                    />
+                  }
+                  label="SGNX"
+                />
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={formData.SGNX_Parent}
+                      onChange={handleChange}
+                      name="SGNX_Parent"
+                    />
+                  }
+                  label="SGNX-Parent"
+                />
+              </FormGroup>
+            </FormControl>
+          </Box>
         </form>
       </DialogContent>
       
