@@ -67,19 +67,6 @@ const SignIn = () => {
     }
   };
 
-  const handleSocialSignIn = async (provider) => {
-    try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider,
-      });
-      
-      if (error) throw error;
-    } catch (err) {
-      console.error(`${provider} sign in error:`, err);
-      setError(`Failed to sign in with ${provider}`);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
@@ -169,47 +156,6 @@ const SignIn = () => {
               </button>
             </div>
           </form>
-          
-          <div className="mt-6">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300" />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">
-                  Or continue with
-                </span>
-              </div>
-            </div>
-
-            <div className="mt-6 grid grid-cols-2 gap-3">
-              <div>
-                <button
-                  onClick={() => handleSocialSignIn('google')}
-                  type="button"
-                  className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
-                >
-                  <span className="sr-only">Sign in with Google</span>
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12.545,10.239v3.821h5.445c-0.712,2.315-2.647,3.972-5.445,3.972c-3.332,0-6.033-2.701-6.033-6.032s2.701-6.032,6.033-6.032c1.498,0,2.866,0.549,3.921,1.453l2.814-2.814C17.503,2.988,15.139,2,12.545,2C7.021,2,2.543,6.477,2.543,12s4.478,10,10.002,10c8.396,0,10.249-7.85,9.426-11.748L12.545,10.239z"/>
-                  </svg>
-                </button>
-              </div>
-
-              <div>
-                <button
-                  onClick={() => handleSocialSignIn('facebook')}
-                  type="button"
-                  className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
-                >
-                  <span className="sr-only">Sign in with Facebook</span>
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M22,12.1c0-5.5-4.5-10-10-10s-10,4.5-10,10c0,5,3.7,9.1,8.4,9.9v-7h-2.5v-2.9h2.5V9.9c0-2.5,1.5-3.9,3.8-3.9c1.1,0,2.2,0.2,2.2,0.2v2.5h-1.3c-1.2,0-1.6,0.8-1.6,1.6v1.9h2.8L15.9,15h-2.3v7C18.3,21.2,22,17.1,22,12.1z"/>
-                  </svg>
-                </button>
-              </div>
-            </div>
-          </div>
           
           <div className="mt-8 text-center">
             <a href="/" className="font-medium text-blue-600 hover:text-blue-500">

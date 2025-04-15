@@ -197,38 +197,38 @@ const AddMember = () => {
   
       // STEP 4: Insert into other related tables
       // OCCUPATION
-      // await supabase.from('OCCUPATION').insert([{
-      //   resident_id,
-      //   occupation: formData.occupation,
-      //   profession: formData.profession,
-      //   work_location: formData.work_location
-      // }]);
+      await supabase.from('occupation').insert([{
+        resident_id,
+        occupation: formData.occupation,
+        profession: formData.profession,
+        work_location: formData.work_location
+      }]);
   
-      // // EDUCATION
-      // await supabase.from('EDUCATION').insert([{
-      //   resident_id,
-      //   highest_qualification: formData.highest_qualification,
-      //   school_or_college_name: formData.school_or_college_name,
-      //   year_of_completion: formData.year_of_completion
-      // }]);
+      // EDUCATION
+      await supabase.from('education').insert([{
+        resident_id,
+        highest_qualification: formData.highest_qualification,
+        school_or_college_name: formData.school_or_college_name,
+        year_of_completion: formData.year_of_completion
+      }]);
   
-      // // HEALTH
-      // await supabase.from('HEALTH_RECORDS').insert([{
-      //   resident_id,
-      //   blood_group: formData.blood_group,
-      //   mediclaim: formData.mediclaim ? 'yes' : 'no',
-      //   Thalassamia: formData.Thalassamia,
-      //   G6PD: formData.G6PD ? 'yes' : 'no'
-      // }]);
+      // HEALTH
+      await supabase.from('health_records').insert([{
+        resident_id,
+        blood_group: formData.blood_group,
+        mediclaim: formData.mediclaim ? 'yes' : 'no',
+        Thalassamia: formData.Thalassamia,
+        G6PD: formData.G6PD ? 'yes' : 'no'
+      }]);
   
-      // // WHATSAPP GROUPS
-      // await supabase.from('WHATSAPP_GROUPS').insert([{
-      //   resident_id,
-      //   Shirva_Setu: formData.Shirva_Setu,
-      //   Dukhad_Nidhan: formData.Dukhad_Nidhan,
-      //   SGNX: formData.SGNX,
-      //   SGNX_Parent: formData.SGNX_Parent
-      // }]);
+      // WHATSAPP GROUPS
+      await supabase.from('whatsapp_groups').insert([{
+        resident_id,
+        Shirva_Setu: formData.Shirva_Setu,
+        Dukhad_Nidhan: formData.Dukhad_Nidhan,
+        SGNX: formData.SGNX,
+        SGNX_Parent: formData.SGNX_Parent
+      }]);
   
       // Show success
       setNotification({

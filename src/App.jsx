@@ -21,6 +21,8 @@ import Landing from './pages/landing';
 import SignIn from './pages/signin';
 import Register from './pages/register';
 
+import AdminRouteGuard from './components/adminRouteGuard';
+
 
 function App() {
   return (
@@ -33,12 +35,56 @@ function App() {
         <Route path="/user/settings" element={<AccountSettings />} />
         
         {/* Admin Routes */}
-        <Route path="/admin/dashboard" element={<AdminDashboard />} />
-        <Route path="/admin/approvals" element={<Approvals />} />
-        <Route path="/admin/total-families" element={<TotalFamilies />} />
-        <Route path="/admin/residents" element={<Residents />} />
-        <Route path="/admin/analytics" element={<Analytics />} />
-        <Route path="/admin/households" element={<Households />} />
+        {/* Admin Routes */}
+        <Route
+          path="/admin/dashboard"
+          element={
+            <AdminRouteGuard>
+              <AdminDashboard />
+            </AdminRouteGuard>
+          }
+        />
+        <Route
+          path="/admin/approvals"
+          element={
+            <AdminRouteGuard>
+              <Approvals />
+            </AdminRouteGuard>
+          }
+        />
+        <Route
+          path="/admin/total-families"
+          element={
+            <AdminRouteGuard>
+              <TotalFamilies />
+            </AdminRouteGuard>
+          }
+        />
+        <Route
+          path="/admin/residents"
+          element={
+            <AdminRouteGuard>
+              <Residents />
+            </AdminRouteGuard>
+          }
+        />
+        <Route
+          path="/admin/analytics"
+          element={
+            <AdminRouteGuard>
+              <Analytics />
+            </AdminRouteGuard>
+          }
+        />
+        <Route
+          path="/admin/households"
+          element={
+            <AdminRouteGuard>
+              <Households />
+            </AdminRouteGuard>
+          }
+        />
+
         
         {/* General Routes */}
         <Route path="/" element={<Landing />} />
