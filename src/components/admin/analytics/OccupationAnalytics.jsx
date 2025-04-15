@@ -1,301 +1,329 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { FaBriefcase, FaIndustry, FaChartLine, FaSearch } from 'react-icons/fa';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../supabaseClient';
+import {
+  Box,
+  Typography,
+  Grid,
+  Paper,
+  CircularProgress,
+  Card,
+  CardContent
+} from '@mui/material';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell
+} from 'recharts';
+
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#A4DE6C', '#D0ED57'];
 
 const OccupationAnalytics = () => {
-  // State for occupation data and UI
-  const [occupationStats, setOccupationStats] = useState({
-    employmentRate: '0%',
-    topSector: 'N/A',
-    topOccupation: 'N/A',
-  });
-
-  const [residents, setResidents] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [employmentStats, setEmploymentStats] = useState({
+    employed: 0,
+    unemployed: 0,
+    employmentRate: 0
+  });
+  const [professionData, setProfessionData] = useState([]);
+  const [yearlyTrend, setYearlyTrend] = useState([]);
+  const [occupationData, setOccupationData] = useState([]);
 
-  // State for search and filters
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedSector, setSelectedSector] = useState('');
-  const [selectedLocation, setSelectedLocation] = useState('');
+  // Define employment categories
+  const UNEMPLOYED_CATEGORIES = ['Student', 'Homemaker', 'Retired', 'Unemployed'];
+  const EMPLOYED_CATEGORIES = ['Employed', 'Self-employed', 'Business Owner'];
 
-  // Fetch residents with occupation data
   useEffect(() => {
-    const fetchResidentsWithOccupation = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
         
-        // Join RESIDENTS and OCCUPATION tables
-        const { data, error } = await supabase
-          .from('RESIDENTS')
+        // Fetch combined data from residents and occupation tables
+        const { data: residents, error: residentsError } = await supabase
+          .from('residents')
           .select(`
-            resident_id,
-            first_name,
-            middle_name,
-            last_name,
-            OCCUPATION (
-              occupation_id,
-              occupation,
+            id,
+            occupation,
+            date_of_birth,
+            occupation_data:occupation_id (
               profession,
               work_location
             )
           `);
         
-        if (error) throw error;
+        if (residentsError) throw residentsError;
+
+        // Alternative approach if you need to join tables differently
+        const { data: occupationRecords, error: occupationError } = await supabase
+          .from('occupation')
+          .select(`
+            resident_id,
+            profession,
+            work_location,
+            residents!inner(
+              occupation,
+              date_of_birth
+            )
+          `);
         
-        // Transform the data to match our component's expected format
-        const transformedData = data.map(resident => {
-          const occupation = resident.OCCUPATION?.[0]; // Get the first occupation record
+        if (occupationError) throw occupationError;
+
+        // Combine both approaches to get complete data
+        const combinedData = residents.map(resident => {
+          const occupationRecord = occupationRecords.find(
+            record => record.resident_id === resident.id
+          );
           return {
-            id: resident.resident_id,
-            name: `${resident.first_name} ${resident.middle_name ? resident.middle_name + ' ' : ''}${resident.last_name}`.trim(),
-            occupation: occupation?.occupation || 'Unemployed',
-            workLocation: occupation?.work_location || 'N/A',
-            sector: occupation?.profession || 'N/A'
+            ...resident,
+            profession: occupationRecord?.profession || resident.occupation_data?.profession,
+            work_location: occupationRecord?.work_location || resident.occupation_data?.work_location
           };
         });
+
+        // Calculate employment statistics
+        let employed = 0;
+        let unemployed = 0;
+        const professionCounts = {};
+        const occupationCounts = {};
+
+        combinedData.forEach(resident => {
+          // Count employment status
+          if (UNEMPLOYED_CATEGORIES.includes(resident.occupation)) {
+            unemployed++;
+          } else if (EMPLOYED_CATEGORIES.includes(resident.occupation)) {
+            employed++;
+          }
+
+          // Count professions
+          if (resident.profession) {
+            professionCounts[resident.profession] = (professionCounts[resident.profession] || 0) + 1;
+          }
+
+          // Count occupations
+          if (resident.occupation) {
+            occupationCounts[resident.occupation] = (occupationCounts[resident.occupation] || 0) + 1;
+          }
+        });
+
+        const totalCounted = employed + unemployed;
+        const employmentRate = totalCounted > 0 ? Math.round((employed / totalCounted) * 100) : 0;
+
+        setEmploymentStats({
+          employed,
+          unemployed,
+          employmentRate
+        });
+
+        // Prepare profession distribution data (top 7)
+        const professionDistribution = Object.entries(professionCounts)
+          .map(([name, value]) => ({ name, value }))
+          .sort((a, b) => b.value - a.value)
+          .slice(0, 7);
+
+        setProfessionData(professionDistribution);
+
+        // Prepare occupation distribution data
+        const occupationDistribution = Object.entries(occupationCounts)
+          .map(([name, value]) => ({ name, value }))
+          .sort((a, b) => b.value - a.value);
+
+        setOccupationData(occupationDistribution);
+
+        // Calculate 5-year employment trend (more accurate version)
+        const currentYear = new Date().getFullYear();
+        const years = Array.from({ length: 5 }, (_, i) => currentYear - i).reverse();
         
-        setResidents(transformedData);
-        calculateStats(transformedData);
-      } catch (err) {
-        console.error('Error fetching data:', err);
-        setError('Failed to load occupation data');
-      } finally {
+        const trendData = years.map(year => {
+          // Filter residents who would be working age (18-65) in each year
+          const minBirthYear = year - 65;
+          const maxBirthYear = year - 18;
+          
+          const yearlyResidents = combinedData.filter(resident => {
+            if (!resident.date_of_birth) return false;
+            const birthYear = new Date(resident.date_of_birth).getFullYear();
+            return birthYear >= minBirthYear && birthYear <= maxBirthYear;
+          });
+
+          const yearlyEmployed = yearlyResidents.filter(resident => 
+            EMPLOYED_CATEGORIES.includes(resident.occupation)
+          ).length;
+
+          const yearlyUnemployed = yearlyResidents.filter(resident => 
+            UNEMPLOYED_CATEGORIES.includes(resident.occupation)
+          ).length;
+
+          const total = yearlyEmployed + yearlyUnemployed;
+          const rate = total > 0 ? Math.round((yearlyEmployed / total) * 100) : 0;
+
+          return {
+            year,
+            employed: yearlyEmployed,
+            unemployed: yearlyUnemployed,
+            rate
+          };
+        });
+
+        setYearlyTrend(trendData);
+        setLoading(false);
+
+      } catch (error) {
+        console.error('Error fetching data:', error);
         setLoading(false);
       }
     };
 
-    fetchResidentsWithOccupation();
+    fetchData();
   }, []);
 
-  // Calculate occupation statistics
-  const calculateStats = (data) => {
-    if (!data.length) return;
-    
-    // Employment rate
-    const employed = data.filter(r => r.occupation !== 'Unemployed').length;
-    const employmentRate = ((employed / data.length) * 100).toFixed(1) + '%';
-    
-    // Find top sector/profession
-    const sectorCounts = {};
-    const occupationCounts = {};
-    
-    data.forEach(r => {
-      if (r.sector !== 'N/A') {
-        sectorCounts[r.sector] = (sectorCounts[r.sector] || 0) + 1;
-      }
-      
-      if (r.occupation !== 'Unemployed') {
-        occupationCounts[r.occupation] = (occupationCounts[r.occupation] || 0) + 1;
-      }
-    });
-    
-    let topSector = 'N/A';
-    let maxSectorCount = 0;
-    
-    Object.entries(sectorCounts).forEach(([sector, count]) => {
-      if (count > maxSectorCount) {
-        maxSectorCount = count;
-        topSector = sector;
-      }
-    });
-    
-    let topOccupation = 'N/A';
-    let maxOccupationCount = 0;
-    
-    Object.entries(occupationCounts).forEach(([occupation, count]) => {
-      if (count > maxOccupationCount) {
-        maxOccupationCount = count;
-        topOccupation = occupation;
-      }
-    });
-    
-    setOccupationStats({
-      employmentRate,
-      topSector,
-      topOccupation
-    });
-  };
-
-  // Get unique sectors and locations for filter dropdowns
-  const sectors = useMemo(() => [...new Set(residents.map(resident => resident.sector))], [residents]);
-  const locations = useMemo(() => [...new Set(residents.map(resident => resident.workLocation))], [residents]);
-
-  // Filter residents based on search and filters
-  const filteredResidents = useMemo(() => {
-    return residents.filter(resident => {
-      // Search query filter
-      const matchesSearch = searchQuery === '' || 
-        resident.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-        resident.occupation.toLowerCase().includes(searchQuery.toLowerCase());
-      
-      // Sector filter
-      const matchesSector = selectedSector === '' || resident.sector === selectedSector;
-      
-      // Location filter
-      const matchesLocation = selectedLocation === '' || resident.workLocation === selectedLocation;
-      
-      return matchesSearch && matchesSector && matchesLocation;
-    });
-  }, [residents, searchQuery, selectedSector, selectedLocation]);
-
-  // Reset all filters
-  const resetFilters = () => {
-    setSearchQuery('');
-    setSelectedSector('');
-    setSelectedLocation('');
-  };
-
-  if (error) {
-    return <div className="text-red-500 p-4">Error: {error}</div>;
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
+        <CircularProgress />
+      </Box>
+    );
   }
 
   return (
-    <div>
-      <h2 className="text-xl font-semibold mb-4">Occupation Analytics</h2>
+    <Box sx={{ p: 3 }}>
+      <Typography variant="h4" gutterBottom>
+        Occupation Analytics
+      </Typography>
       
-      {loading ? (
-        <div className="flex justify-center p-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-        </div>
-      ) : (
-        <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-            <div className="bg-white p-4 rounded-lg shadow">
-              <div className="flex items-center">
-                <div className="p-3 rounded-full bg-blue-100 text-blue-600 mr-4">
-                  <FaBriefcase />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Employment Rate</p>
-                  <p className="text-xl font-semibold">{occupationStats.employmentRate}</p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-white p-4 rounded-lg shadow">
-              <div className="flex items-center">
-                <div className="p-3 rounded-full bg-green-100 text-green-600 mr-4">
-                  <FaIndustry />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Top Sector</p>
-                  <p className="text-xl font-semibold">{occupationStats.topSector}</p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-white p-4 rounded-lg shadow">
-              <div className="flex items-center">
-                <div className="p-3 rounded-full bg-purple-100 text-purple-600 mr-4">
-                  <FaChartLine />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Top Occupation</p>
-                  <p className="text-xl font-semibold">{occupationStats.topOccupation}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-white p-6 rounded-lg shadow mb-6">
-            <h3 className="text-lg font-semibold mb-4">Occupation Distribution by Industry</h3>
-            <div className="h-64 flex items-center justify-center bg-gray-100 rounded">
-              <p className="text-gray-500">Chart placeholder - Occupation distribution chart would go here</p>
-            </div>
-          </div>
+      <Grid container spacing={3}>
+        {/* Employment Stats Cards */}
+        <Grid item xs={12} md={4}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6">Employed</Typography>
+              <Typography variant="h3">{employmentStats.employed}</Typography>
+              <Typography variant="body2" color="text.secondary">
+                {EMPLOYED_CATEGORIES.join(', ')}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        
+        <Grid item xs={12} md={4}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6">Unemployed</Typography>
+              <Typography variant="h3">{employmentStats.unemployed}</Typography>
+              <Typography variant="body2" color="text.secondary">
+                {UNEMPLOYED_CATEGORIES.join(', ')}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        
+        <Grid item xs={12} md={4}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6">Employment Rate</Typography>
+              <Typography variant="h3">{employmentStats.employmentRate}%</Typography>
+              <Typography variant="body2" color="text.secondary">
+                Employed / (Employed + Unemployed)
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
 
-          {/* Resident Occupation List Section */}
-          <div className="bg-white p-6 rounded-lg shadow">
-            <h3 className="text-lg font-semibold mb-4">Resident Occupation Details</h3>
-            
-            {/* Search and Filter Controls */}
-            <div className="mb-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FaSearch className="text-gray-400" />
-                </div>
-                <input
-                  type="text"
-                  placeholder="Search by name or occupation"
-                  className="pl-10 p-2 border rounded w-full"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
-              
-              <div>
-                <select 
-                  className="p-2 border rounded w-full"
-                  value={selectedSector}
-                  onChange={(e) => setSelectedSector(e.target.value)}
+        {/* Employment Trend Chart */}
+        <Grid item xs={12} md={8}>
+          <Paper sx={{ p: 2, height: '400px' }}>
+            <Typography variant="h6" gutterBottom>
+              5-Year Employment Trend
+            </Typography>
+            <ResponsiveContainer width="100%" height="90%">
+              <BarChart data={yearlyTrend}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="year" />
+                <YAxis yAxisId="left" orientation="left" />
+                <YAxis yAxisId="right" orientation="right" domain={[0, 100]} />
+                <Tooltip />
+                <Legend />
+                <Bar yAxisId="left" dataKey="employed" name="Employed" fill="#8884d8" />
+                <Bar yAxisId="left" dataKey="unemployed" name="Unemployed" fill="#FF6B6B" />
+                <Bar yAxisId="right" dataKey="rate" name="Employment Rate" fill="#82ca9d" />
+              </BarChart>
+            </ResponsiveContainer>
+          </Paper>
+        </Grid>
+
+        {/* Profession Distribution */}
+        <Grid item xs={12} md={6}>
+          <Paper sx={{ p: 2, height: '400px' }}>
+            <Typography variant="h6" gutterBottom>
+              Top Professions
+            </Typography>
+            <ResponsiveContainer width="100%" height="90%">
+              <PieChart>
+                <Pie
+                  data={professionData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                  nameKey="name"
+                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
                 >
-                  <option value="">All Sectors</option>
-                  {sectors.map((sector, index) => (
-                    <option key={index} value={sector}>{sector}</option>
+                  {professionData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
-                </select>
-              </div>
-              
-              <div>
-                <select 
-                  className="p-2 border rounded w-full"
-                  value={selectedLocation}
-                  onChange={(e) => setSelectedLocation(e.target.value)}
+                </Pie>
+                <Tooltip />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </Paper>
+        </Grid>
+
+        {/* Occupation Distribution */}
+        <Grid item xs={12} md={6}>
+          <Paper sx={{ p: 2, height: '400px' }}>
+            <Typography variant="h6" gutterBottom>
+              Occupation Types
+            </Typography>
+            <ResponsiveContainer width="100%" height="90%">
+              <PieChart>
+                <Pie
+                  data={occupationData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                  nameKey="name"
+                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
                 >
-                  <option value="">All Locations</option>
-                  {locations.map((location, index) => (
-                    <option key={index} value={location}>{location}</option>
+                  {occupationData.map((entry, index) => (
+                    <Cell 
+                      key={`cell-${index}`} 
+                      fill={
+                        UNEMPLOYED_CATEGORIES.includes(entry.name) ? '#FF6B6B' :
+                        EMPLOYED_CATEGORIES.includes(entry.name) ? '#8884d8' :
+                        COLORS[index % COLORS.length]
+                      }
+                    />
                   ))}
-                </select>
-              </div>
-              
-              <div className="md:col-span-3 flex justify-end">
-                <button 
-                  onClick={resetFilters}
-                  className="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
-                >
-                  Reset Filters
-                </button>
-              </div>
-            </div>
-            
-            {/* Residents Table */}
-            <div className="overflow-x-auto">
-              <table className="min-w-full bg-white">
-                <thead className="bg-gray-100">
-                  <tr>
-                    <th className="py-2 px-4 border-b text-left">Name</th>
-                    <th className="py-2 px-4 border-b text-left">Occupation</th>
-                    <th className="py-2 px-4 border-b text-left">Work Location</th>
-                    <th className="py-2 px-4 border-b text-left">Sector</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredResidents.length > 0 ? (
-                    filteredResidents.map((resident) => (
-                      <tr key={resident.id}>
-                        <td className="py-2 px-4 border-b">{resident.name}</td>
-                        <td className="py-2 px-4 border-b">{resident.occupation}</td>
-                        <td className="py-2 px-4 border-b">{resident.workLocation}</td>
-                        <td className="py-2 px-4 border-b">{resident.sector}</td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan="4" className="py-4 text-center text-gray-500">No matching residents found</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-            <div className="mt-4 text-sm text-gray-500">
-              Showing {filteredResidents.length} of {residents.length} residents
-            </div>
-          </div>
-        </>
-      )}
-    </div>
+                </Pie>
+                <Tooltip />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </Paper>
+        </Grid>
+      </Grid>
+    </Box>
   );
 };
 

@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+
 // Import react-icons for better social media icons
 import { FaFacebook, FaTwitter, FaInstagram, FaLinkedin } from 'react-icons/fa';
 // Import the logo SVG
@@ -77,7 +79,11 @@ const Landing = () => {
         {/* Navigation Links */}
         <div className={`md:flex md:items-center md:static fixed top-16 inset-x-0 bg-white md:bg-transparent shadow-md md:shadow-none md:flex-row flex-col p-5 transition-all duration-300 ${isNavOpen ? 'flex z-40' : 'hidden md:flex'}`}>
           <ul className="md:flex md:items-center md:space-x-8 w-full">
-            <li className="my-3 md:my-0"><a href="#home" className="text-gray-800 font-semibold hover:text-blue-500 transition-colors">Home</a></li>
+          
+          <Link to="/user/dashboard" className="text-gray-800 font-semibold hover:text-blue-500 transition-colors">Home</Link>
+
+
+
             <li className="my-3 md:my-0"><a href="#about" className="text-gray-800 font-semibold hover:text-blue-500 transition-colors">About</a></li>
             <li className="my-3 md:my-0"><a href="#initiatives" className="text-gray-800 font-semibold hover:text-blue-500 transition-colors">Initiatives</a></li>
             <li className="my-3 md:my-0"><a href="#gallery" className="text-gray-800 font-semibold hover:text-blue-500 transition-colors">Gallery</a></li>

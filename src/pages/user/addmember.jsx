@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Container, Box, Typography, TextField, Grid, FormControl,
   InputLabel, Select, MenuItem, FormControlLabel, Radio,
   RadioGroup, Checkbox, FormGroup, Button, Paper, Divider,
-  FormLabel, FormHelperText, Alert, Snackbar
+  FormLabel, Alert, Snackbar
 } from '@mui/material';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
@@ -15,80 +15,32 @@ import dayjs from 'dayjs';
 
 const AddMember = () => {
   const [formData, setFormData] = useState({
-    // Resident data
     first_name: '',
     middle_name: '',
     last_name: '',
     gender: '',
-    relation: '', // was relationToHead
-    marital_status: '', // was maritalStatus
+    relation: '',
+    marital_status: '',
     date_of_birth: null,
     phone_number: '',
     email: '',
-    lifemember: false, // was isLifeMember
-    household_id: null, // Will be set based on the household
-
-    // Occupation data
+    lifemember: false,
+    household_id: null,
     occupation: '',
     profession: '',
     work_location: '',
-
-    // Education data
     highest_qualification: '',
-    school_or_college_name: '', // was schoolName
+    school_or_college_name: '',
     year_of_completion: '',
-
-    // Health data
-    blood_group: '', // was bloodGroup
-    mediclaim: false, // was hasMediclaim
-    Thalassamia: '', // matches DB field name
-    G6PD: false, // was g6pdChecked
-
-    // WhatsApp group data
-    Shirva_Setu: false, // was whatsappGroups.shirvaSetu
-    Dukhad_Nidhan: false, // was whatsappGroups.dukhadNidhan
-    SGNX: false, // was whatsappGroups.sgnx
-    SGNX_Parent: false, // was whatsappGroups.sgnxParent
+    blood_group: '',
+    mediclaim: false,
+    Thalassamia: '',
+    G6PD: false,
+    Shirva_Setu: false,
+    Dukhad_Nidhan: false,
+    SGNX: false,
+    SGNX_Parent: false,
   });
-
-  // const [formData, setFormData] = useState({
-  //   // Resident data
-  //   first_name: 'Rajesh',
-  //   middle_name: 'Kumar',
-  //   last_name: 'Shirva',
-  //   gender: 'Male', // from genderOptions
-  //   relation: 'Self', // from relationOptions
-  //   marital_status: 'Married', // from maritalOptions
-  //   date_of_birth: '1985-07-15',
-  //   phone_number: '9876543210',
-  //   email: 'rajesh.shirva@example.com',
-  //   lifemember: true,
-  //   household_id: null, // to be auto-generated
-  
-  //   // Occupation data
-  //   occupation: 'Engineer',
-  //   profession: 'Software Developer',
-  //   work_location: 'Mumbai',
-  
-  //   // Education data
-  //   highest_qualification: 'Master\'s', // from qualificationOptions
-  //   school_or_college_name: 'IIT Bombay',
-  //   year_of_completion: '2008',
-  
-  //   // Health data
-  //   blood_group: 'B+', // from bloodGroupOptions
-  //   mediclaim: true,
-  //   Thalassamia: 'Negative', // from thalassemiaOptions
-  //   G6PD: true,
-  
-  //   // WhatsApp group data
-  //   Shirva_Setu: true,
-  //   Dukhad_Nidhan: false,
-  //   SGNX: true,
-  //   SGNX_Parent: false,
-  // });
-  
-  
 
   const [notification, setNotification] = useState({
     open: false,
@@ -96,26 +48,73 @@ const AddMember = () => {
     severity: 'info'
   });
 
+  const [dropdownOptions, setDropdownOptions] = useState({
+    genderOptions: [],
+    relationOptions: [],
+    maritalOptions: [],
+    bloodGroupOptions: [],
+    thalassemiaOptions: [],
+    qualificationOptions: [],
+    occupationOptions: [],
+    professionOptions: []
+  });
+
+  useEffect(() => {
+    const fetchDropdownOptions = async () => {
+      try {
+        const fetchOptions = async (category, fallback) => {
+          const { data } = await supabase
+            .from('dropdown_options')
+            .select('options')
+            .eq('category', category)
+            .single();
+          return data?.options || fallback;
+        };
+
+        setDropdownOptions({
+          genderOptions: await fetchOptions('gender', ['Male', 'Female', 'Other']),
+          relationOptions: await fetchOptions('relation', ['Self', 'Husband', 'Wife', 'Son', 'Daughter-in-law', 'Grand Son', 'Grand Daughter', 'Daughter', 'Brother', 'Sister']),
+          maritalOptions: await fetchOptions('marital_status', ['Single', 'Married']),
+          bloodGroupOptions: await fetchOptions('blood_group', ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-', 'Unknown']),
+          thalassemiaOptions: await fetchOptions('thalassemia', ['Major', 'Minor', 'Negative', 'Not Checked']),
+          qualificationOptions: await fetchOptions('qualification', ['Primary', 'Secondary', 'Higher Secondary', 'Diploma', 'Bachelor\'s', 'Master\'s', 'Doctorate', 'Other']),
+          occupationOptions: await fetchOptions('occupation', ['Student', 'Employed', 'Self-employed', 'Business Owner', 'Homemaker', 'Retired', 'Unemployed', 'Other']),
+          professionOptions: await fetchOptions('profession', ['Doctor', 'Engineer', 'Teacher/Professor', 'Lawyer', 'Accountant', 'IT Professional', 'Government Employee', 'Banking Professional', 'Business', 'Agriculture', 'Skilled Trade', 'Nurse/Healthcare Worker', 'Artist/Creative Professional', 'Not Applicable', 'Other'])
+        });
+      } catch (error) {
+        console.error('Error fetching dropdown options:', error);
+        setDropdownOptions({
+          genderOptions: ['Male', 'Female', 'Other'],
+          relationOptions: ['Self', 'Husband', 'Wife', 'Son', 'Daughter-in-law', 'Grand Son', 'Grand Daughter', 'Daughter', 'Brother', 'Sister'],
+          maritalOptions: ['Single', 'Married'],
+          bloodGroupOptions: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-', 'Unknown'],
+          thalassemiaOptions: ['Major', 'Minor', 'Negative', 'Not Checked'],
+          qualificationOptions: ['Primary', 'Secondary', 'Higher Secondary', 'Diploma', 'Bachelor\'s', 'Master\'s', 'Doctorate', 'Other'],
+          occupationOptions: ['Student', 'Employed', 'Self-employed', 'Business Owner', 'Homemaker', 'Retired', 'Unemployed', 'Other'],
+          professionOptions: ['Doctor', 'Engineer', 'Teacher/Professor', 'Lawyer', 'Accountant', 'IT Professional', 'Government Employee', 'Banking Professional', 'Business', 'Agriculture', 'Skilled Trade', 'Nurse/Healthcare Worker', 'Artist/Creative Professional', 'Not Applicable', 'Other']
+        });
+      }
+    };
+
+    fetchDropdownOptions();
+  }, []);
+
   const handleChange = (e) => {
     const { name, value, checked, type } = e.target;
-
-    setFormData({
-      ...formData,
-      [name]: type === 'checkbox' ? checked :
-        name === 'lifemember' || name === 'mediclaim' ? value === 'yes' :
-          value
-    });
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : 
+              (name === 'lifemember' || name === 'mediclaim') ? value === 'yes' : 
+              value
+    }));
   };
 
   const handleDateChange = (date) => {
-    setFormData({
-      ...formData,
-      date_of_birth: date
-    });
+    setFormData(prev => ({ ...prev, date_of_birth: date }));
   };
 
   const closeNotification = () => {
-    setNotification({ ...notification, open: false });
+    setNotification(prev => ({ ...prev, open: false }));
   };
 
   const handleSubmit = async (e) => {
@@ -129,7 +128,7 @@ const AddMember = () => {
       const isHeadOfFamily = formData.relation === 'Self';
       let household_id = null;
   
-      // STEP 1: Insert into RESIDENTS
+      // Insert into RESIDENTS (including occupation and profession)
       const { data: residentData, error: residentError } = await supabase
         .from('residents')
         .insert([{
@@ -143,7 +142,9 @@ const AddMember = () => {
           phone_number: formData.phone_number,
           email: formData.email,
           lifemember: formData.lifemember,
-          household_id: null  // temporarily null; will update after household insert
+          occupation: formData.occupation,
+          profession: formData.profession,
+          household_id: null
         }])
         .select();
   
@@ -152,12 +153,11 @@ const AddMember = () => {
       const resident_id = residentData[0].resident_id;
   
       if (isHeadOfFamily) {
-        // STEP 2: Create new HOUSEHOLD entry
         const { data: householdData, error: householdError } = await supabase
           .from('household')
           .insert([{
             head_of_family_id: resident_id,
-            address: '', // optionally prompt or collect this
+            address: '',
             chapter: '',
             number_of_members: 1
           }])
@@ -167,7 +167,6 @@ const AddMember = () => {
   
         household_id = householdData[0].household_id;
   
-        // STEP 3: Update RESIDENT with generated household_id
         const { error: updateResidentError } = await supabase
           .from('residents')
           .update({ household_id })
@@ -175,18 +174,11 @@ const AddMember = () => {
   
         if (updateResidentError) throw updateResidentError;
   
-        // STEP 4: Store household_id locally for future additions
         localStorage.setItem('household_id', household_id);
-  
       } else {
-        // Not head of family — fetch household_id from local storage
         household_id = localStorage.getItem('household_id');
+        if (!household_id) throw new Error("Head of family must register first");
   
-        if (!household_id) {
-          throw new Error("Head of family must register first. No household_id found.");
-        }
-  
-        // STEP 3: Update RESIDENT with existing household_id
         const { error: updateResidentError } = await supabase
           .from('residents')
           .update({ household_id })
@@ -195,49 +187,48 @@ const AddMember = () => {
         if (updateResidentError) throw updateResidentError;
       }
   
-      // STEP 4: Insert into other related tables
-      // OCCUPATION
-      await supabase.from('occupation').insert([{
-        resident_id,
-        occupation: formData.occupation,
-        profession: formData.profession,
-        work_location: formData.work_location
-      }]);
+      // Insert into OCCUPATION table (with additional work_location)
+      const { error: occupationError } = await supabase
+        .from('occupation')
+        .insert([{
+          resident_id,
+          occupation: formData.occupation,
+          profession: formData.profession,
+          work_location: formData.work_location
+        }]);
   
-      // EDUCATION
-      await supabase.from('education').insert([{
-        resident_id,
-        highest_qualification: formData.highest_qualification,
-        school_or_college_name: formData.school_or_college_name,
-        year_of_completion: formData.year_of_completion
-      }]);
+      if (occupationError) throw occupationError;
   
-      // HEALTH
-      await supabase.from('health_records').insert([{
-        resident_id,
-        blood_group: formData.blood_group,
-        mediclaim: formData.mediclaim ? 'yes' : 'no',
-        Thalassamia: formData.Thalassamia,
-        G6PD: formData.G6PD ? 'yes' : 'no'
-      }]);
+      // Insert into other tables
+      await Promise.all([
+        supabase.from('education').insert([{
+          resident_id,
+          highest_qualification: formData.highest_qualification,
+          school_or_college_name: formData.school_or_college_name,
+          year_of_completion: formData.year_of_completion
+        }]),
+        supabase.from('health_records').insert([{
+          resident_id,
+          blood_group: formData.blood_group,
+          mediclaim: formData.mediclaim ? 'yes' : 'no',
+          Thalassamia: formData.Thalassamia,
+          G6PD: formData.G6PD ? 'yes' : 'no'
+        }]),
+        supabase.from('whatsapp_groups').insert([{
+          resident_id,
+          Shirva_Setu: formData.Shirva_Setu,
+          Dukhad_Nidhan: formData.Dukhad_Nidhan,
+          SGNX: formData.SGNX,
+          SGNX_Parent: formData.SGNX_Parent
+        }])
+      ]);
   
-      // WHATSAPP GROUPS
-      await supabase.from('whatsapp_groups').insert([{
-        resident_id,
-        Shirva_Setu: formData.Shirva_Setu,
-        Dukhad_Nidhan: formData.Dukhad_Nidhan,
-        SGNX: formData.SGNX,
-        SGNX_Parent: formData.SGNX_Parent
-      }]);
-  
-      // Show success
       setNotification({
         open: true,
         message: 'Member added successfully!',
         severity: 'success'
       });
   
-      // Reset form
       setFormData({
         first_name: '',
         middle_name: '',
@@ -275,56 +266,6 @@ const AddMember = () => {
       });
     }
   };
-  
-
-  // Options for select inputs
-  const genderOptions = ['Male', 'Female', 'Other'];
-  const relationOptions = [
-    'Self',
-    'Husband',
-    'Wife',
-    'Son',
-    'Daughter-in-law',
-    'Grand Son',
-    'Grand Daughter',
-    'Daughter',
-    'Brother',
-    'Sister'
-  ];
-  const maritalOptions = ['Single', 'Married'];
-  const bloodGroupOptions = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-', 'Unknown'];
-  const thalassemiaOptions = ['Major', 'Minor', 'Negative', 'Not Checked'];
-  const qualificationOptions = ['Primary', 'Secondary', 'Higher Secondary', 'Diploma', 'Bachelor\'s', 'Master\'s', 'Doctorate', 'Other'];
-  
-  // New option arrays for occupation and profession
-  const occupationOptions = [
-    'Student',
-    'Employed',
-    'Self-employed',
-    'Business Owner',
-    'Homemaker',
-    'Retired',
-    'Unemployed',
-    'Other'
-  ];
-  
-  const professionOptions = [
-    'Doctor',
-    'Engineer',
-    'Teacher/Professor',
-    'Lawyer',
-    'Accountant',
-    'IT Professional',
-    'Government Employee',
-    'Banking Professional',
-    'Business',
-    'Agriculture',
-    'Skilled Trade',
-    'Nurse/Healthcare Worker',
-    'Artist/Creative Professional',
-    'Not Applicable',
-    'Other'
-  ];
 
   return (
     <>
@@ -384,7 +325,7 @@ const AddMember = () => {
                         onChange={handleChange}
                         label="Gender"
                       >
-                        {genderOptions.map(option => (
+                        {dropdownOptions.genderOptions.map(option => (
                           <MenuItem key={option} value={option}>{option}</MenuItem>
                         ))}
                       </Select>
@@ -400,7 +341,7 @@ const AddMember = () => {
                         onChange={handleChange}
                         label="Relation to Head of Family"
                       >
-                        {relationOptions.map(option => (
+                        {dropdownOptions.relationOptions.map(option => (
                           <MenuItem key={option} value={option}>{option}</MenuItem>
                         ))}
                       </Select>
@@ -416,7 +357,7 @@ const AddMember = () => {
                         onChange={handleChange}
                         label="Marital Status"
                       >
-                        {maritalOptions.map(option => (
+                        {dropdownOptions.maritalOptions.map(option => (
                           <MenuItem key={option} value={option}>{option}</MenuItem>
                         ))}
                       </Select>
@@ -499,7 +440,7 @@ const AddMember = () => {
                         onChange={handleChange}
                         label="Occupation"
                       >
-                        {occupationOptions.map(option => (
+                        {dropdownOptions.occupationOptions.map(option => (
                           <MenuItem key={option} value={option}>{option}</MenuItem>
                         ))}
                       </Select>
@@ -514,7 +455,7 @@ const AddMember = () => {
                         onChange={handleChange}
                         label="Profession"
                       >
-                        {professionOptions.map(option => (
+                        {dropdownOptions.professionOptions.map(option => (
                           <MenuItem key={option} value={option}>{option}</MenuItem>
                         ))}
                       </Select>
@@ -549,7 +490,7 @@ const AddMember = () => {
                         onChange={handleChange}
                         label="Highest Qualification"
                       >
-                        {qualificationOptions.map(option => (
+                        {dropdownOptions.qualificationOptions.map(option => (
                           <MenuItem key={option} value={option}>{option}</MenuItem>
                         ))}
                       </Select>
@@ -595,7 +536,7 @@ const AddMember = () => {
                         onChange={handleChange}
                         label="Blood Group"
                       >
-                        {bloodGroupOptions.map(option => (
+                        {dropdownOptions.bloodGroupOptions.map(option => (
                           <MenuItem key={option} value={option}>{option}</MenuItem>
                         ))}
                       </Select>
@@ -626,7 +567,7 @@ const AddMember = () => {
                         onChange={handleChange}
                         label="Thalassemia"
                       >
-                        {thalassemiaOptions.map(option => (
+                        {dropdownOptions.thalassemiaOptions.map(option => (
                           <MenuItem key={option} value={option}>{option}</MenuItem>
                         ))}
                       </Select>
