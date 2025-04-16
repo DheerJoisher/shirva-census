@@ -96,7 +96,11 @@ const Approvals = () => {
     return (
         <>
             <Navbar />
-            <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
+            <div style={{ 
+                padding: '20px', 
+                fontFamily: 'Arial, sans-serif',
+                minHeight: 'calc(100vh - 200px)' // Ensure minimum height between navbar and footer
+            }}>
                 <h1>Pending Approvals</h1>
                 
                 {error && <p style={{ color: 'red' }}>{error}</p>}
@@ -104,7 +108,33 @@ const Approvals = () => {
                 {loading ? (
                     <p>Loading pending approvals...</p>
                 ) : approvals.length === 0 ? (
-                    <p>No pending approvals.</p>
+                    <div style={{ 
+                        display: 'flex', 
+                        flexDirection: 'column', 
+                        alignItems: 'center', 
+                        justifyContent: 'center',
+                        padding: '50px 0',
+                        backgroundColor: '#f9f9f9',
+                        borderRadius: '8px',
+                        marginTop: '30px'
+                    }}>
+                        <svg 
+                            style={{ width: '80px', height: '80px', marginBottom: '20px', color: '#888' }}
+                            xmlns="http://www.w3.org/2000/svg" 
+                            viewBox="0 0 24 24" 
+                            fill="none" 
+                            stroke="currentColor" 
+                            strokeWidth="2" 
+                            strokeLinecap="round" 
+                            strokeLinejoin="round"
+                        >
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <path d="M12 8v4"></path>
+                            <path d="M12 16h.01"></path>
+                        </svg>
+                        <h2 style={{ color: '#555', margin: '0 0 10px 0' }}>No Pending Approvals</h2>
+                        <p style={{ color: '#777', textAlign: 'center' }}>There are currently no user registration requests awaiting approval.</p>
+                    </div>
                 ) : (
                     <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '20px' }}>
                         <thead>

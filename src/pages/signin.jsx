@@ -57,7 +57,7 @@ const SignIn = () => {
       if (userData?.role === 'admin') {
         navigate('/admin/dashboard');
       } else {
-        navigate('/dashboard');
+        navigate('/user/dashboard');
       }
     } catch (err) {
       console.error('Sign in error:', err);

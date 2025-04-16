@@ -13,8 +13,6 @@ const AdminDashboard = () => {
     lifeMemberCount: 0
   });
   
-  const [recentActivity, setRecentActivity] = useState([]);
-
   useEffect(() => {
     // Fetch dashboard stats
     const fetchStats = async () => {
@@ -53,78 +51,13 @@ const AdminDashboard = () => {
           pendingApprovals: pendingCount || 0,
           lifeMemberCount: lifeMembers || 0
         });
-        
-        // Fetch recent activity
-        await fetchRecentActivity();
       } catch (error) {
         console.error("Failed to fetch dashboard stats:", error);
       }
     };
 
-    const fetchRecentActivity = async () => {
-      try {
-        // Get recently registered families/residents
-        const { data: recentresidents, error: residentsError } = await supabase
-          .from('residents')
-          .select('first_name, last_name, created_at')
-          .order('created_at', { ascending: false })
-          .limit(3);
-          
-        // Get recently approved users
-        const { data: recentApprovals, error: approvalsError } = await supabase
-          .from('users')
-          .select('created_at')
-          .order('created_at', { ascending: false })
-          .limit(3);
-          
-        if (residentsError || approvalsError) {
-          console.error("Error fetching activity:", { residentsError, approvalsError });
-          return;
-        }
-        
-        const activity = [];
-        
-        if (recentresidents?.length) {
-          activity.push({
-            type: 'residents',
-            count: recentresidents.length,
-            time: new Date(recentresidents[0].created_at),
-            icon: <FaUsers className="text-base sm:text-lg" />
-          });
-        }
-        
-        if (recentApprovals?.length) {
-          activity.push({
-            type: 'approvals',
-            count: recentApprovals.length,
-            time: new Date(recentApprovals[0].created_at),
-            icon: <FaClipboardCheck className="text-base sm:text-lg" />
-          });
-        }
-        
-        setRecentActivity(activity);
-      } catch (error) {
-        console.error("Failed to fetch recent activity:", error);
-      }
-    };
-
     fetchStats();
   }, []);
-
-  const formatActivityTime = (time) => {
-    const now = new Date();
-    const diffHours = Math.floor((now - time) / (1000 * 60 * 60));
-    
-    if (diffHours < 24) {
-      return diffHours === 1 ? '1 hour ago' : `${diffHours} hours ago`;
-    }
-    
-    const diffDays = Math.floor(diffHours / 24);
-    if (diffDays === 1) return 'Yesterday';
-    if (diffDays < 7) return `${diffDays} days ago`;
-    
-    return time.toLocaleDateString();
-  };
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
@@ -204,39 +137,6 @@ const AdminDashboard = () => {
               <FaChevronRight className="ml-1 text-xs" />
             </div>
           </Link>
-        </div>
-
-        {/* Recent Activity Section */}
-        <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6 border border-gray-100">
-          <div className="flex items-center justify-between mb-3 sm:mb-4">
-            <h2 className="text-base sm:text-lg font-semibold text-gray-800">Recent Activity</h2>
-            <button className="text-xs sm:text-sm text-blue-600 hover:underline">View all</button>
-          </div>
-          <div className="space-y-3 sm:space-y-4">
-            {recentActivity.length > 0 ? (
-              recentActivity.map((activity, index) => (
-                <div key={index} className="flex items-start">
-                  <div className={`p-1.5 sm:p-2 ${
-                    activity.type === 'residents' ? 'bg-blue-50 text-blue-600' : 'bg-orange-50 text-orange-500'
-                  } rounded-lg mr-3 sm:mr-4 flex-shrink-0`}>
-                    {activity.icon}
-                  </div>
-                  <div className="overflow-hidden">
-                    <p className="text-xs sm:text-sm font-medium">
-                      {activity.type === 'residents' 
-                        ? `${activity.count} new resident registrations` 
-                        : `${activity.count} approvals completed`}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-0.5 sm:mt-1">
-                      {formatActivityTime(activity.time)}
-                    </p>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <p className="text-sm text-gray-500">No recent activity</p>
-            )}
-          </div>
         </div>
       </main>
       

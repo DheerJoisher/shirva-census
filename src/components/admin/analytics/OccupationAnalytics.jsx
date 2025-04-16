@@ -45,45 +45,39 @@ const OccupationAnalytics = () => {
       try {
         setLoading(true);
         
-        // Fetch combined data from residents and occupation tables
+        // Fetch data from RESIDENTS table
         const { data: residents, error: residentsError } = await supabase
           .from('residents')
           .select(`
-            id,
-            occupation,
-            date_of_birth,
-            occupation_data:occupation_id (
-              profession,
-              work_location
-            )
+            resident_id,
+            date_of_birth
           `);
         
         if (residentsError) throw residentsError;
 
-        // Alternative approach if you need to join tables differently
-        const { data: occupationRecords, error: occupationError } = await supabase
+        // Fetch data from OCCUPATION table
+        const { data: occupationData, error: occupationError } = await supabase
           .from('occupation')
           .select(`
             resident_id,
+            occupation,
             profession,
-            work_location,
-            residents!inner(
-              occupation,
-              date_of_birth
-            )
+            work_location
           `);
         
         if (occupationError) throw occupationError;
 
-        // Combine both approaches to get complete data
+        // Combine the data
         const combinedData = residents.map(resident => {
-          const occupationRecord = occupationRecords.find(
-            record => record.resident_id === resident.id
-          );
+          const occupation = occupationData.find(
+            record => record.resident_id === resident.resident_id
+          ) || {};
+          
           return {
             ...resident,
-            profession: occupationRecord?.profession || resident.occupation_data?.profession,
-            work_location: occupationRecord?.work_location || resident.occupation_data?.work_location
+            occupation: occupation.occupation || 'Unknown',
+            profession: occupation.profession || 'Unknown',
+            work_location: occupation.work_location
           };
         });
 
@@ -102,7 +96,7 @@ const OccupationAnalytics = () => {
           }
 
           // Count professions
-          if (resident.profession) {
+          if (resident.profession && resident.profession !== 'Unknown') {
             professionCounts[resident.profession] = (professionCounts[resident.profession] || 0) + 1;
           }
 
@@ -127,16 +121,16 @@ const OccupationAnalytics = () => {
           .sort((a, b) => b.value - a.value)
           .slice(0, 7);
 
-        setProfessionData(professionDistribution);
+        setProfessionData(professionDistribution.length > 0 ? professionDistribution : [{ name: 'No Data', value: 1 }]);
 
         // Prepare occupation distribution data
         const occupationDistribution = Object.entries(occupationCounts)
           .map(([name, value]) => ({ name, value }))
           .sort((a, b) => b.value - a.value);
 
-        setOccupationData(occupationDistribution);
+        setOccupationData(occupationDistribution.length > 0 ? occupationDistribution : [{ name: 'No Data', value: 1 }]);
 
-        // Calculate 5-year employment trend (more accurate version)
+        // Calculate 5-year employment trend
         const currentYear = new Date().getFullYear();
         const years = Array.from({ length: 5 }, (_, i) => currentYear - i).reverse();
         

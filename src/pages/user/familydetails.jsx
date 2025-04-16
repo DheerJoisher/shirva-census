@@ -97,10 +97,10 @@ const FamilyDetails = () => {
               required
             >
               <option value="" disabled>Select your chapter</option>
-              <option value="Chapter 1">Mulund-Ghatkopar</option>
-              <option value="Chapter 2">Western Chapter</option>
-              <option value="Chapter 3">Kutchh Chapter</option>
-              <option value="Chapter 4">Vapi-Valsad Chapter</option>
+              <option value="Mulund-Ghatkopar">Mulund-Ghatkopar</option>
+              <option value="Western Chapter">Western Chapter</option>
+              <option value="Kutchh Chapter">Kutchh Chapter</option>
+              <option value="Vapi-Valsad">Vapi-Valsad</option>
             </select>
           </div>
 

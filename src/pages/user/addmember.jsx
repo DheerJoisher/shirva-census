@@ -199,29 +199,45 @@ const AddMember = () => {
   
       if (occupationError) throw occupationError;
   
-      // Insert into other tables
-      await Promise.all([
-        supabase.from('education').insert([{
-          resident_id,
-          highest_qualification: formData.highest_qualification,
-          school_or_college_name: formData.school_or_college_name,
-          year_of_completion: formData.year_of_completion
-        }]),
-        supabase.from('health_records').insert([{
-          resident_id,
-          blood_group: formData.blood_group,
-          mediclaim: formData.mediclaim ? 'yes' : 'no',
-          Thalassamia: formData.Thalassamia,
-          G6PD: formData.G6PD ? 'yes' : 'no'
-        }]),
-        supabase.from('whatsapp_groups').insert([{
-          resident_id,
-          Shirva_Setu: formData.Shirva_Setu,
-          Dukhad_Nidhan: formData.Dukhad_Nidhan,
-          SGNX: formData.SGNX,
-          SGNX_Parent: formData.SGNX_Parent
-        }])
-      ]);
+      // Insert into other tables with better error handling
+      try {
+        const [educationResult, healthResult, whatsappResult] = await Promise.all([
+          // Education table
+          supabase.from('education').insert([{
+            resident_id,
+            highest_qualification: formData.highest_qualification,
+            school_or_college_name: formData.school_or_college_name,
+            year_of_completion: formData.year_of_completion
+          }]),
+          
+          // Health records table - fixed to ensure proper data format
+          supabase.from('health_records').insert([{
+            resident_id,
+            blood_group: formData.blood_group || 'Unknown',
+            mediclaim: formData.mediclaim ? 'yes' : 'no',
+            thalassamia: formData.Thalassamia || 'Not Checked',
+            g6pd: formData.G6PD ? 'yes' : 'no'
+          }]),
+          
+          // WhatsApp groups table - fixed to use boolean values consistently
+          supabase.from('whatsapp_groups').insert([{
+            resident_id,
+            shirva_setu: formData.shirva_setu || false,
+            dukhad_nidhan: formData.dukhad_nidhan || false,
+            sgnx: formData.sgnx || false,
+            sgnx_parent: formData.sgnx_parent || false
+          }])
+        ]);
+        
+        // Check for errors in each result
+        if (educationResult.error) throw new Error(`Education data error: ${educationResult.error.message}`);
+        if (healthResult.error) throw new Error(`Health records error: ${healthResult.error.message}`);
+        if (whatsappResult.error) throw new Error(`WhatsApp groups error: ${whatsappResult.error.message}`);
+        
+      } catch (tableError) {
+        console.error('Error inserting into secondary tables:', tableError);
+        throw tableError;
+      }
   
       setNotification({
         open: true,
@@ -324,6 +340,7 @@ const AddMember = () => {
                         value={formData.gender}
                         onChange={handleChange}
                         label="Gender"
+                        required
                       >
                         {dropdownOptions.genderOptions.map(option => (
                           <MenuItem key={option} value={option}>{option}</MenuItem>
@@ -340,6 +357,7 @@ const AddMember = () => {
                         value={formData.relation}
                         onChange={handleChange}
                         label="Relation to Head of Family"
+                        required
                       >
                         {dropdownOptions.relationOptions.map(option => (
                           <MenuItem key={option} value={option}>{option}</MenuItem>
@@ -356,6 +374,7 @@ const AddMember = () => {
                         value={formData.marital_status}
                         onChange={handleChange}
                         label="Marital Status"
+                        required
                       >
                         {dropdownOptions.maritalOptions.map(option => (
                           <MenuItem key={option} value={option}>{option}</MenuItem>
@@ -367,7 +386,7 @@ const AddMember = () => {
                   <Grid item xs={12} sm={6}>
                     <LocalizationProvider dateAdapter={AdapterDayjs}>
                       <DatePicker
-                        label="Date of Birth"
+                        label="Date of Birth *"
                         value={formData.date_of_birth}
                         onChange={handleDateChange}
                         slotProps={{ textField: { fullWidth: true, required: true } }}
@@ -393,6 +412,7 @@ const AddMember = () => {
                       value={formData.phone_number}
                       onChange={handleChange}
                       type="tel"
+                      required
                     />
                   </Grid>
                   <Grid item xs={12} sm={6}>
@@ -403,6 +423,7 @@ const AddMember = () => {
                       value={formData.email}
                       onChange={handleChange}
                       type="email"
+                      required
                     />
                   </Grid>
 
@@ -432,13 +453,14 @@ const AddMember = () => {
 
                 <Grid container spacing={2}>
                   <Grid item xs={12} sm={6}>
-                    <FormControl fullWidth>
+                    <FormControl fullWidth required>
                       <InputLabel>Occupation</InputLabel>
                       <Select
                         name="occupation"
                         value={formData.occupation}
                         onChange={handleChange}
                         label="Occupation"
+                        required
                       >
                         {dropdownOptions.occupationOptions.map(option => (
                           <MenuItem key={option} value={option}>{option}</MenuItem>
@@ -447,13 +469,14 @@ const AddMember = () => {
                     </FormControl>
                   </Grid>
                   <Grid item xs={12} sm={6}>
-                    <FormControl fullWidth>
+                    <FormControl fullWidth required>
                       <InputLabel>Profession</InputLabel>
                       <Select
                         name="profession"
                         value={formData.profession}
                         onChange={handleChange}
                         label="Profession"
+                        required
                       >
                         {dropdownOptions.professionOptions.map(option => (
                           <MenuItem key={option} value={option}>{option}</MenuItem>
@@ -468,6 +491,7 @@ const AddMember = () => {
                       name="work_location"
                       value={formData.work_location}
                       onChange={handleChange}
+                      required
                     />
                   </Grid>
                 </Grid>
@@ -482,13 +506,14 @@ const AddMember = () => {
 
                 <Grid container spacing={2}>
                   <Grid item xs={12} sm={6}>
-                    <FormControl fullWidth>
+                    <FormControl fullWidth required>
                       <InputLabel>Highest Qualification</InputLabel>
                       <Select
                         name="highest_qualification"
                         value={formData.highest_qualification}
                         onChange={handleChange}
                         label="Highest Qualification"
+                        required
                       >
                         {dropdownOptions.qualificationOptions.map(option => (
                           <MenuItem key={option} value={option}>{option}</MenuItem>
@@ -503,6 +528,7 @@ const AddMember = () => {
                       name="school_or_college_name"
                       value={formData.school_or_college_name}
                       onChange={handleChange}
+                      required
                     />
                   </Grid>
                   <Grid item xs={12} sm={6}>
@@ -514,6 +540,7 @@ const AddMember = () => {
                       onChange={handleChange}
                       type="number"
                       InputProps={{ inputProps: { min: 1950, max: new Date().getFullYear() } }}
+                      required
                     />
                   </Grid>
                 </Grid>
@@ -528,13 +555,14 @@ const AddMember = () => {
 
                 <Grid container spacing={2}>
                   <Grid item xs={12} sm={6}>
-                    <FormControl fullWidth>
+                    <FormControl fullWidth required>
                       <InputLabel>Blood Group</InputLabel>
                       <Select
                         name="blood_group"
                         value={formData.blood_group}
                         onChange={handleChange}
                         label="Blood Group"
+                        required
                       >
                         {dropdownOptions.bloodGroupOptions.map(option => (
                           <MenuItem key={option} value={option}>{option}</MenuItem>
@@ -559,13 +587,14 @@ const AddMember = () => {
                   </Grid>
 
                   <Grid item xs={12} sm={6}>
-                    <FormControl fullWidth>
+                    <FormControl fullWidth required>
                       <InputLabel>Thalassemia</InputLabel>
                       <Select
                         name="Thalassamia"
                         value={formData.Thalassamia}
                         onChange={handleChange}
                         label="Thalassemia"
+                        required
                       >
                         {dropdownOptions.thalassemiaOptions.map(option => (
                           <MenuItem key={option} value={option}>{option}</MenuItem>

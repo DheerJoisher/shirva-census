@@ -16,43 +16,87 @@ const Residents = () => {
   useEffect(() => {
     const fetchResidents = async () => {
       try {
-        const { data, error } = await supabase
+        // Fetch residents with all related data
+        const { data: residentsData, error: residentsError } = await supabase
           .from('residents')
           .select('*');
 
-        if (error) throw error;
+        if (residentsError) throw residentsError;
 
-        const transformedData = data.map(resident => ({
-          resident_id: resident.resident_id,
-          first_name: resident.first_name,
-          middle_name: resident.middle_name,
-          last_name: resident.last_name,
-          gender: resident.gender,
-          relation: resident.relation,
-          marital_status: resident.marital_status,
-          date_of_birth: resident.date_of_birth,
-          phone_number: resident.phone_number,
-          email: resident.email,
-          lifemember: resident.lifemember ? 'Yes' : 'No',
+        // Fetch occupation data
+        const { data: occupationData, error: occupationError } = await supabase
+          .from('occupation')
+          .select('*');
+        
+        if (occupationError) throw occupationError;
 
-          // Dummy related data
-          occupation: '—',
-          profession: '—',
-          work_location: '—',
-          highest_qualification: '—',
-          school_name: '—',
-          year_of_completion: '—',
-          blood_group: '—',
-          mediclaim: '—',
-          thalassemia: '—',
-          g6pd: '—',
-          whatsapp_groups: {
-            Shirva_Setu: false,
-            Dukhad_Nidhan: false,
-            SGNX: false,
-            SGNX_Parent: false
-          }
-        }));
+        // Fetch education data
+        const { data: educationData, error: educationError } = await supabase
+          .from('education')
+          .select('*');
+        
+        if (educationError) throw educationError;
+
+        // Fetch health records
+        const { data: healthData, error: healthError } = await supabase
+          .from('health_records')
+          .select('*');
+        
+        if (healthError) throw healthError;
+
+        // Fetch whatsapp groups
+        const { data: whatsappData, error: whatsappError } = await supabase
+          .from('whatsapp_groups')
+          .select('*');
+        
+        if (whatsappError) throw whatsappError;
+
+        // Map all the data together
+        const transformedData = residentsData.map(resident => {
+          // Find related data for this resident
+          const occupation = occupationData.find(o => o.resident_id === resident.resident_id) || {};
+          const education = educationData.find(e => e.resident_id === resident.resident_id) || {};
+          const health = healthData.find(h => h.resident_id === resident.resident_id) || {};
+          const whatsapp = whatsappData.find(w => w.resident_id === resident.resident_id) || {};
+
+          return {
+            resident_id: resident.resident_id,
+            first_name: resident.first_name,
+            middle_name: resident.middle_name,
+            last_name: resident.last_name,
+            gender: resident.gender,
+            relation: resident.relation,
+            marital_status: resident.marital_status,
+            date_of_birth: resident.date_of_birth,
+            phone_number: resident.phone_number,
+            email: resident.email,
+            lifemember: resident.lifemember ? 'Yes' : 'No',
+
+            // Occupation data
+            occupation: occupation.occupation || '—',
+            profession: occupation.profession || '—',
+            work_location: occupation.work_location || '—',
+            
+            // Education data
+            highest_qualification: education.highest_qualification || '—',
+            school_name: education.school_or_college_name || '—',
+            year_of_completion: education.year_of_completion || '—',
+            
+            // Health data
+            blood_group: health.blood_group || '—',
+            mediclaim: health.mediclaim || '—',
+            thalassemia: health.thalassamia || '—',
+            g6pd: health.g6pd || '—',
+            
+            // Whatsapp groups
+            whatsapp_groups: {
+              shirva_Setu: whatsapp.shirva_setu || false,
+              dukhad_nidhan: whatsapp.dukhad_nidhan || false,
+              sgnx: whatsapp.sgnx || false,
+              sgnx_parent: whatsapp.sgnx_parent || false
+            }
+          };
+        });
 
         setResidents(transformedData);
         setFilteredResidents(transformedData);
